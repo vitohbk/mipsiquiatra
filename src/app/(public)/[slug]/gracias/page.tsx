@@ -17,22 +17,26 @@ export default function BookingThanksPage() {
   const status = resolveStatus(searchParams);
 
   const title =
-    status === "approved"
-      ? "Pago recibido"
-      : status === "pending"
-        ? "Pago en proceso"
-        : status === "failed"
-          ? "Pago rechazado"
-          : "Procesando reserva";
+    status === "failed"
+      ? "No pudimos completar el pago"
+      : "Tu reserva está confirmada";
 
   const message =
-    status === "approved"
-      ? "Tu reserva está confirmada. Recibirás un correo de confirmación."
+    status === "failed"
+      ? "Sabemos que esto puede ser frustrante. Si quieres, respira un momento y vuelve a intentarlo cuando te sea cómodo."
       : status === "pending"
-        ? "Estamos esperando la confirmación del pago. Te avisaremos por correo."
-        : status === "failed"
-          ? "No pudimos procesar el pago. Puedes intentar nuevamente."
-          : "Estamos confirmando tu reserva. Te avisaremos por correo.";
+        ? "Gracias por dar este paso. Tu horario quedó reservado; en breve recibirás la confirmación por correo."
+        : "Gracias por dar este paso en tu bienestar. Tu hora quedó reservada y en unos minutos recibirás un correo con todos los detalles.";
+
+  const helper =
+    status === "failed"
+      ? "Si necesitas ayuda o prefieres reprogramar, responde a nuestro correo y con gusto te acompañamos."
+      : "Si necesitas reprogramar o tienes preguntas, responde al correo de confirmación y te ayudamos.";
+
+  const closing =
+    status === "failed"
+      ? "Estamos aquí para ayudarte cuando lo necesites."
+      : "Gracias por confiar en nosotros para acompañarte en este proceso.";
 
   return (
     <main className="min-h-screen bg-[var(--page-bg)] px-6 py-16 text-[var(--page-text)]">
@@ -43,8 +47,9 @@ export default function BookingThanksPage() {
           <p className="text-sm text-[var(--panel-muted)]">{message}</p>
         </div>
         <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-soft)] p-4 text-sm text-[var(--panel-muted)]">
-          Si el correo no llega en unos minutos, revisa spam o contáctanos.
+          {helper} Si el correo no llega en unos minutos, revisa spam.
         </div>
+        <p className="text-sm text-[var(--panel-muted)]">{closing}</p>
         <div className="flex flex-wrap gap-3">
           <Link
             className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"

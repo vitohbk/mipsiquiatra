@@ -1,25 +1,8 @@
 import nodemailer from "nodemailer";
 import { NextResponse } from "next/server";
+import { buildBookingEmail, type NotifyPayload } from "@/lib/notify/email-template";
 
 export const runtime = "nodejs";
-
-type NotifyPayload = {
-  type: "confirmation" | "reminder";
-  to: string;
-  customer_name?: string | null;
-  service_name?: string | null;
-  tenant_name?: string | null;
-  start_at: string;
-  timezone?: string | null;
-};
-
-function formatDateTime(value: string, timeZone: string) {
-  return new Date(value).toLocaleString("es-CL", {
-    dateStyle: "full",
-    timeStyle: "short",
-    timeZone,
-  });
-}
 
 export async function POST(req: Request) {
   const secret = process.env.NOTIFY_WEBHOOK_SECRET ?? "";
@@ -45,32 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const timezone = payload.timezone ?? "America/Santiago";
-  const formattedDate = formatDateTime(payload.start_at, timezone);
-  const tenantName = payload.tenant_name ?? "Nuestro equipo";
-  const serviceName = payload.service_name ?? "tu atención";
-  const customerName = payload.customer_name ?? "";
-
-  const subject =
-    payload.type === "reminder" ? "Recordatorio de tu reserva" : "Reserva confirmada";
-
-  const title = payload.type === "reminder" ? "Recordatorio de reserva" : "Reserva confirmada";
-  const bodyText =
-    payload.type === "reminder"
-      ? `Te recordamos tu reserva para ${serviceName}.`
-      : `Tu reserva para ${serviceName} quedó confirmada.`;
-
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
-      <h2 style="margin: 0 0 12px;">${title}</h2>
-      <p style="margin: 0 0 12px;">Hola ${customerName || ""},</p>
-      <p style="margin: 0 0 12px;">${bodyText}</p>
-      <p style="margin: 0 0 12px;">
-        <strong>Fecha y hora:</strong> ${formattedDate}
-      </p>
-      <p style="margin: 0 0 16px;">Gracias por confiar en ${tenantName}.</p>
-    </div>
-  `;
+  const { subject, html } = buildBookingEmail(payload);
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
