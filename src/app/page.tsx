@@ -122,12 +122,6 @@ export default function Home() {
             <a href="#servicios" className="hover:text-[#39cec9]">
               Servicios
             </a>
-            <a
-              href="https://calendly.com/mipsiquiatra/primera-cita-psiquiatrica-videollamada"
-              className="hover:text-[#39cec9]"
-            >
-              Agendar online
-            </a>
           </nav>
           <details className="md:hidden">
             <summary className="cursor-pointer text-sm font-semibold text-[#39cec9]">Menú</summary>
@@ -140,12 +134,6 @@ export default function Home() {
               </a>
               <a className="block py-2 text-[#b87333]" href="#servicios">
                 Servicios
-              </a>
-              <a
-                className="block py-2 text-[#b87333]"
-                href="https://calendly.com/mipsiquiatra/primera-cita-psiquiatrica-videollamada"
-              >
-                Agendar online
               </a>
             </div>
           </details>
