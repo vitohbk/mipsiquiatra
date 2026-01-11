@@ -311,8 +311,7 @@ export default function BookingsPage() {
     if (!window.confirm("Cancelar esta reserva?")) return;
     setError(null);
     setSavingEdit(true);
-    const { error: cancelError } = await supabase
-      .from("bookings")
+    const { error: cancelError } = await (supabase.from("bookings") as any)
       .update({ status: "cancelled" })
       .eq("id", bookingId);
     if (cancelError) {
