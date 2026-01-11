@@ -45,6 +45,11 @@ type Slot = {
   end_at: string;
 };
 
+type BookingLink = {
+  slug: string | null;
+  public_token: string | null;
+};
+
 export default function BookingsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { activeTenantId } = useActiveTenant();
@@ -271,7 +276,7 @@ export default function BookingsPage() {
       .eq("professional_user_id", booking.professional_user_id)
       .eq("is_active", true)
       .limit(1)
-      .maybeSingle();
+      .maybeSingle<BookingLink>();
 
     if (linkError || !linkData) {
       setError(linkError?.message ?? "No se encontró disponibilidad para reprogramar.");
