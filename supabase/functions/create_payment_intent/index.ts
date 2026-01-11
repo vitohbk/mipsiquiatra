@@ -328,8 +328,13 @@ serve(async (req) => {
       });
     }
 
-    const notificationUrl =
-      mpWebhookUrl || (supabaseUrl ? `${supabaseUrl}/functions/v1/mercadopago_webhook` : "");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const apikeySuffix = anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : "";
+    const notificationUrl = mpWebhookUrl
+      ? mpWebhookUrl
+      : supabaseUrl
+        ? `${supabaseUrl}/functions/v1/mercadopago_webhook${apikeySuffix}`
+        : "";
 
     const preferencePayload = {
       items: [
