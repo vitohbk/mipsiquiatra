@@ -605,7 +605,7 @@ export default function PublicBookingPage() {
                         health_insurance: insurance,
                       },
                       idempotency_key: crypto.randomUUID(),
-                      return_url: window.location.href,
+                      return_url: `${window.location.origin}/${slug}/gracias`,
                     }, { disableAuth: true });
 
                     if (result.booking_id) {
