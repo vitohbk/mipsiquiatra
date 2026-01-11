@@ -1,36 +1,36 @@
-const heroImage = "/assets/hero.jpg";
-const logoImage = "/assets/logo.svg";
-const marielaImage = "/assets/mariela-yanez.jpg";
-const signatureImage = "/assets/firma.png";
-const methodImage = "/assets/metodo.jpg";
+const heroImage = "/assets/hero.webp";
+const logoImage = "/assets/logo.webp";
+const marielaImage = "/assets/mariela-yanez.webp";
+const signatureImage = "/assets/firma.webp";
+const methodImage = "/assets/metodo.webp";
 const placeImages = [
-  "/assets/telemedicina-1.jpg",
-  "/assets/telemedicina-2.jpg",
-  "/assets/telemedicina-3.jpg",
+  "/assets/telemedicina-1.webp",
+  "/assets/telemedicina-2.webp",
+  "/assets/telemedicina-3.webp",
 ];
 const isapreLogos = [
   {
-    src: "/assets/isapre-masvida.png",
+    src: "/assets/isapre-masvida.webp",
     alt: "Isapre Nueva Masvida",
   },
   {
-    src: "/assets/isapre-colmena.png",
+    src: "/assets/isapre-colmena.webp",
     alt: "Isapre Colmena",
   },
   {
-    src: "/assets/isapre-vidatres.png",
+    src: "/assets/isapre-vidatres.webp",
     alt: "Isapre VidaTres",
   },
   {
-    src: "/assets/isapre-banmedica.png",
+    src: "/assets/isapre-banmedica.webp",
     alt: "Isapre Banmedica",
   },
   {
-    src: "/assets/isapre-consalud.png",
+    src: "/assets/isapre-consalud.webp",
     alt: "Isapre Consalud",
   },
   {
-    src: "/assets/isapre-cruzblanca.png",
+    src: "/assets/isapre-cruzblanca.webp",
     alt: "Isapre CruzBlanca",
   },
 ];
