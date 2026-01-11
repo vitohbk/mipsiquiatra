@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const heroImage = "/assets/hero.webp";
 const logoImage = "/assets/logo.webp";
 const marielaImage = "/assets/mariela-yanez.webp";
@@ -102,7 +104,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <img src={logoImage} alt="Mi Psiquiatra" className="h-14 w-14 object-contain" />
+            <Image src={logoImage} alt="Mi Psiquiatra" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
               <p className="font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">Mi Psiquiatra</p>
               <p className="text-xs tracking-wide text-[#8b8b8b]">
@@ -178,7 +180,13 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
             <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">¿Quién soy?</h2>
-            <img src={marielaImage} alt="Mariela Yañez" className="mt-6 rounded-3xl object-cover" />
+            <Image
+              src={marielaImage}
+              alt="Mariela Yañez"
+              width={686}
+              height={914}
+              className="mt-6 rounded-3xl object-cover"
+            />
           </div>
           <div className="space-y-6 text-lg leading-relaxed text-[#4b4f58]">
             <h3 className="font-[var(--font-playfair)] text-3xl text-[#2f2f2f]">
@@ -210,7 +218,7 @@ export default function Home() {
                 Facebook
               </a>
             </div>
-            <img src={signatureImage} alt="Firma" className="h-20 w-auto" />
+            <Image src={signatureImage} alt="Firma" width={250} height={106} className="h-20 w-auto" />
           </div>
         </div>
       </section>
@@ -274,7 +282,13 @@ export default function Home() {
             clínica, pruebas psicológicas y/o cognitivas en algunos casos.
           </p>
           <div className="mt-12 grid gap-10 md:grid-cols-[0.9fr_1.1fr]">
-            <img src={methodImage} alt="Psiquiatra adultos" className="rounded-3xl object-cover" />
+            <Image
+              src={methodImage}
+              alt="Psiquiatra adultos"
+              width={686}
+              height={915}
+              className="rounded-3xl object-cover"
+            />
             <div className="space-y-8">
               <div className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
                 <p className="text-5xl font-semibold text-[#39cec9]">1.</p>
@@ -315,7 +329,14 @@ export default function Home() {
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {placeImages.map((src, index) => (
-              <img key={src} src={src} alt={`Lugar ${index + 1}`} className="rounded-3xl object-cover" />
+              <Image
+                key={src}
+                src={src}
+                alt={`Lugar ${index + 1}`}
+                width={427}
+                height={427}
+                className="rounded-3xl object-cover"
+              />
             ))}
           </div>
         </div>
@@ -379,7 +400,14 @@ export default function Home() {
             </p>
             <div className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-3">
               {isapreLogos.map((logo) => (
-                <img key={logo.alt} src={logo.src} alt={logo.alt} className="h-14 w-auto object-contain" />
+                <Image
+                  key={logo.alt}
+                  src={logo.src}
+                  alt={logo.alt}
+                  width={180}
+                  height={70}
+                  className="h-14 w-auto object-contain"
+                />
               ))}
             </div>
           </div>
