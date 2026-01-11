@@ -105,7 +105,7 @@ export default function SettingsPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold md:text-2xl">Settings</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Opciones</h1>
         <p className="text-sm text-[var(--panel-muted)]">Branding, slug y preferencias.</p>
       </div>
 

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
-import { createAdminClient } from "../_shared/supabase.ts";
+import { createAdminClient, createUserClient } from "../_shared/supabase.ts";
 import { assertString } from "../_shared/validation.ts";
 
 const allowedRoles = ["admin", "professional", "staff"] as const;
@@ -21,6 +21,7 @@ serve(async (req) => {
     assertString(payload.full_name, "full_name");
     assertString(payload.email, "email");
     assertString(payload.role, "role");
+    assertString(payload.password, "password");
     if (payload.specialty !== undefined && payload.specialty !== null) {
       assertString(payload.specialty, "specialty");
     }
@@ -32,10 +33,44 @@ serve(async (req) => {
       });
     }
 
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userClient = createUserClient(authHeader);
+    const { data: membership, error: membershipError } = await userClient
+      .from("memberships")
+      .select("id, role")
+      .eq("tenant_id", payload.tenant_id)
+      .maybeSingle();
+
+    if (membershipError) {
+      return new Response(JSON.stringify({ error: membershipError.message }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!membership || !["owner", "admin"].includes(membership.role)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const admin = createAdminClient();
 
     let userId: string | null = null;
-    const { data: userLookup, error: lookupError } = await admin.auth.admin.getUserByEmail(payload.email);
+    const { data: userList, error: lookupError } = await admin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+      email: payload.email,
+    });
     if (lookupError) {
       return new Response(JSON.stringify({ error: lookupError.message }), {
         status: 400,
@@ -43,14 +78,28 @@ serve(async (req) => {
       });
     }
 
-    if (userLookup?.user) {
-      userId = userLookup.user.id;
+    const existingUser = userList?.users?.[0];
+    if (existingUser) {
+      userId = existingUser.id;
+      const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+        password: payload.password,
+        user_metadata: { full_name: payload.full_name },
+      });
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     } else {
-      const { data, error } = await admin.auth.admin.inviteUserByEmail(payload.email, {
-        data: { full_name: payload.full_name },
+      const { data, error } = await admin.auth.admin.createUser({
+        email: payload.email,
+        password: payload.password,
+        email_confirm: true,
+        user_metadata: { full_name: payload.full_name },
       });
       if (error || !data.user) {
-        return new Response(JSON.stringify({ error: error?.message ?? "Invite failed. Revisa SMTP." }), {
+        return new Response(JSON.stringify({ error: error?.message ?? "Create user failed." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -75,7 +124,7 @@ serve(async (req) => {
       });
     }
 
-    const { error: membershipError } = await admin.from("memberships").upsert(
+    const { error: upsertMembershipError } = await admin.from("memberships").upsert(
       {
         tenant_id: payload.tenant_id,
         user_id: userId,
@@ -84,8 +133,8 @@ serve(async (req) => {
       { onConflict: "tenant_id,user_id" },
     );
 
-    if (membershipError) {
-      return new Response(JSON.stringify({ error: membershipError.message }), {
+    if (upsertMembershipError) {
+      return new Response(JSON.stringify({ error: upsertMembershipError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

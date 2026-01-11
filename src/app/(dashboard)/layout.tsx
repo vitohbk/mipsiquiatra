@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {navItem("/dashboard/availability", "Disponibilidad")}
               {navItem("/dashboard/patients", "Pacientes")}
               {navItem("/dashboard/users", "Usuarios")}
-              {navItem("/dashboard/settings", "Settings")}
+              {navItem("/dashboard/settings", "Opciones")}
             </nav>
             <div className="mt-auto">
               <AuthActions />

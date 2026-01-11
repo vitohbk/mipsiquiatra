@@ -41,6 +41,7 @@ export default function UsersPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSpecialty, setInviteSpecialty] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
+  const [invitePassword, setInvitePassword] = useState("");
   const [inviteTab, setInviteTab] = useState<"details" | "availability">("details");
   const [inviteRuleWeekdays, setInviteRuleWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [inviteRuleStartTime, setInviteRuleStartTime] = useState("09:00");
@@ -150,6 +151,7 @@ export default function UsersPage() {
       setInviteTab("details");
       setInviteRulesDraft([]);
       setInviteExceptionsDraft([]);
+      setInvitePassword("");
     }
   }, [searchParams]);
 
@@ -930,6 +932,7 @@ export default function UsersPage() {
                     email: inviteEmail,
                     specialty: inviteSpecialty.trim() || null,
                     role: inviteRole,
+                    password: invitePassword,
                   });
                   const newUserId = result.user_id;
 
@@ -1008,9 +1011,11 @@ export default function UsersPage() {
                       .insert(exceptionPayload);
                     if (exceptionError) throw exceptionError;
                   }
+                  await loadMembers();
                   setInviteName("");
                   setInviteEmail("");
                   setInviteSpecialty("");
+                  setInvitePassword("");
                   setInviteRole("staff");
                   setInviteTab("details");
                   setInviteRulesDraft([]);
@@ -1048,6 +1053,16 @@ export default function UsersPage() {
                       value={inviteEmail}
                       onChange={(event) => setInviteEmail(event.target.value)}
                       placeholder="nombre@correo.com"
+                      required
+                    />
+                  </label>
+                  <label className="text-sm">
+                    Contraseña
+                    <input
+                      className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                      type="password"
+                      value={invitePassword}
+                      onChange={(event) => setInvitePassword(event.target.value)}
                       required
                     />
                   </label>
