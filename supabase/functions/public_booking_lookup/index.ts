@@ -25,14 +25,19 @@ serve(async (req) => {
 
     const admin = createAdminClient();
 
-    const loadProfessionalName = async (userId?: string | null) => {
+    const loadProfessionalProfile = async (userId?: string | null) => {
       if (!userId) return null;
       const { data: profile } = await admin
         .from("profiles")
-        .select("full_name, email")
+        .select("full_name, email, specialty, avatar_url")
         .eq("user_id", userId)
         .maybeSingle();
-      return profile?.full_name ?? profile?.email ?? null;
+      if (!profile) return null;
+      return {
+        name: profile.full_name ?? profile.email ?? null,
+        specialty: profile.specialty ?? null,
+        avatar_url: profile.avatar_url ?? null,
+      };
     };
 
     if (slug) {
@@ -46,7 +51,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!error && data) {
-        const professionalName = await loadProfessionalName(data.professional_user_id);
+        const professional = await loadProfessionalProfile(data.professional_user_id);
         return new Response(JSON.stringify({
           slug: data.slug,
           tenant: { name: data.tenant_name, branding: data.branding },
@@ -62,7 +67,9 @@ serve(async (req) => {
             deposit_amount_clp: data.deposit_amount_clp,
             currency: data.currency,
             requires_payment: data.requires_payment ?? true,
-            professional_name: professionalName,
+            professional_name: professional?.name ?? null,
+            professional_specialty: professional?.specialty ?? null,
+            professional_avatar_url: professional?.avatar_url ?? null,
           },
           professional_user_id: data.professional_user_id,
         }), {
@@ -87,13 +94,15 @@ serve(async (req) => {
         });
       }
 
-      const professionalName = await loadProfessionalName(linkData.professional_user_id);
+      const professional = await loadProfessionalProfile(linkData.professional_user_id);
       return new Response(JSON.stringify({
         slug: linkData.slug,
         tenant: linkData.tenants,
         service: {
           ...linkData.services,
-          professional_name: professionalName,
+          professional_name: professional?.name ?? null,
+          professional_specialty: professional?.specialty ?? null,
+          professional_avatar_url: professional?.avatar_url ?? null,
         },
         professional_user_id: linkData.professional_user_id,
       }), {
@@ -120,13 +129,15 @@ serve(async (req) => {
       });
     }
 
-    const professionalName = await loadProfessionalName(data.professional_user_id);
+    const professional = await loadProfessionalProfile(data.professional_user_id);
     return new Response(JSON.stringify({
       slug: data.slug,
       tenant: data.tenants,
       service: {
         ...data.services,
-        professional_name: professionalName,
+        professional_name: professional?.name ?? null,
+        professional_specialty: professional?.specialty ?? null,
+        professional_avatar_url: professional?.avatar_url ?? null,
       },
       professional_user_id: data.professional_user_id,
     }), {

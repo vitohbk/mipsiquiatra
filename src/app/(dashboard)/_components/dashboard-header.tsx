@@ -33,15 +33,15 @@ export default function DashboardHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--panel-border)] pb-4">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-[var(--panel-muted)]">Tenant</p>
-        <h1 className="text-2xl font-semibold">{tenantName}</h1>
+        <p className="text-xs uppercase tracking-[0.35em] text-[var(--brand-copper)]">Agenda</p>
+        <h1 className="text-xl font-[var(--font-playfair)] text-[var(--brand-ink)]">{tenantName}</h1>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {pathname === "/dashboard/patients" && (
-          <label className="text-sm">
+          <label className="text-sm text-[var(--brand-ink)]">
             Buscar paciente
             <input
-              className="ml-2 w-64 rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+              className="ml-2 w-64 rounded-2xl border border-[var(--panel-border)] bg-white px-3 py-2 text-sm text-[var(--brand-ink)]"
               value={patientQuery}
               onChange={(event) => {
                 const next = new URLSearchParams(searchParams);
@@ -59,7 +59,7 @@ export default function DashboardHeader() {
         )}
         {(pathname === "/dashboard/services") && (
           <Link
-            className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+            className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
             href="/dashboard/services?create=1"
           >
             Nuevo servicio
@@ -67,7 +67,7 @@ export default function DashboardHeader() {
         )}
         {(pathname === "/dashboard/bookings" || pathname === "/dashboard") && (
           <Link
-            className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+            className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
             href="/dashboard/bookings?create=1"
           >
             Nueva reserva
@@ -75,7 +75,7 @@ export default function DashboardHeader() {
         )}
         {pathname === "/dashboard/patients" && (
           <Link
-            className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+            className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
             href="/dashboard/patients?create=1"
           >
             Nuevo paciente
@@ -83,7 +83,7 @@ export default function DashboardHeader() {
         )}
         {pathname === "/dashboard/users" && (
           <Link
-            className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+            className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
             href="/dashboard/users?create=1"
           >
             Nuevo usuario

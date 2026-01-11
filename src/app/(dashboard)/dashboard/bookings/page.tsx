@@ -189,7 +189,7 @@ export default function BookingsPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Reservas</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Reservas</h1>
         <p className="text-sm text-[var(--panel-muted)]">Listado de reservas y pagos.</p>
       </div>
 
@@ -202,12 +202,12 @@ export default function BookingsPage() {
           <div className="space-y-3">
             {Array.from(groupedBookings.entries()).map(([label, items]) => (
               <div key={label} className="space-y-3">
-                <h3 className="text-sm font-semibold capitalize">{label}</h3>
+                <h3 className="text-base font-semibold capitalize">{label}</h3>
                 <div className="space-y-3">
                   {items.map((booking) => (
                     <div
                       key={booking.id}
-                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-sm transition hover:border-[var(--page-text)] cursor-pointer"
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-base transition hover:border-[var(--page-text)] cursor-pointer"
                       role="button"
                       tabIndex={0}
                       onClick={() => openEditBooking(booking)}
@@ -218,15 +218,15 @@ export default function BookingsPage() {
                       }}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-4 py-2 text-sm font-semibold">
+                        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-4 py-2 text-base font-semibold">
                           {new Date(booking.start_at).toLocaleTimeString("es-CL", {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
                         </div>
                         <div className="space-y-1">
-                          <p className="font-semibold">{booking.customer_name}</p>
-                          <p className="text-xs text-[var(--panel-muted)]">
+                          <p className="text-base font-semibold">{booking.customer_name}</p>
+                          <p className="text-sm text-[var(--panel-muted)]">
                             {professionalLabel(booking.professional_user_id)}
                           </p>
                         </div>
@@ -365,10 +365,10 @@ export default function BookingsPage() {
                 router.replace("/dashboard/bookings");
               }}
             >
-              <label className="text-sm">
+              <label className="text-base">
                 Servicio
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={createServiceId}
                   onChange={(event) => setCreateServiceId(event.target.value)}
                   required
@@ -381,10 +381,10 @@ export default function BookingsPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Profesional
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={createProfessionalId}
                   onChange={(event) => setCreateProfessionalId(event.target.value)}
                 >
@@ -396,10 +396,10 @@ export default function BookingsPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Paciente
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={createPatientId}
                   onChange={(event) => setCreatePatientId(event.target.value)}
                   required
@@ -413,20 +413,20 @@ export default function BookingsPage() {
                 </select>
               </label>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="text-sm">
+                <label className="text-base">
                   Fecha
                   <input
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                     type="date"
                     value={createDate}
                     onChange={(event) => setCreateDate(event.target.value)}
                     required
                   />
                 </label>
-                <label className="text-sm">
+                <label className="text-base">
                   Hora
                   <input
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                     type="time"
                     value={createTime}
                     onChange={(event) => setCreateTime(event.target.value)}
@@ -559,10 +559,10 @@ export default function BookingsPage() {
                 setSavingEdit(false);
               }}
             >
-              <label className="text-sm">
+              <label className="text-base">
                 Servicio
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={editServiceId}
                   onChange={(event) => setEditServiceId(event.target.value)}
                   required
@@ -575,10 +575,10 @@ export default function BookingsPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Profesional
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={editProfessionalId}
                   onChange={(event) => setEditProfessionalId(event.target.value)}
                   required
@@ -591,10 +591,10 @@ export default function BookingsPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Paciente
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   value={editPatientId}
                   onChange={(event) => setEditPatientId(event.target.value)}
                   required
@@ -607,20 +607,20 @@ export default function BookingsPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Fecha
                 <input
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   type="date"
                   value={editDate}
                   onChange={(event) => setEditDate(event.target.value)}
                   required
                 />
               </label>
-              <label className="text-sm">
+              <label className="text-base">
                 Hora
                 <input
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                   type="time"
                   value={editTime}
                   onChange={(event) => setEditTime(event.target.value)}

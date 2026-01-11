@@ -16,8 +16,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <Link
         aria-current={isActive ? "page" : undefined}
         className={[
-          "rounded-xl px-3 py-2 transition hover:bg-[var(--panel-soft)]",
-          isActive ? "bg-[var(--panel-soft)] font-semibold text-[var(--page-text)]" : "text-[var(--panel-muted)]",
+          "rounded-full px-3 py-2 transition hover:bg-[var(--panel-soft)] hover:text-[var(--brand-teal)]",
+          isActive
+            ? "bg-[var(--panel-soft)] font-semibold text-[var(--brand-ink)]"
+            : "text-[var(--brand-copper)]",
         ].join(" ")}
         href={href}
       >
@@ -28,10 +30,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-[var(--page-bg)] text-[var(--page-text)]">
+      <div className="dashboard-brand min-h-screen bg-[var(--page-bg)] font-[var(--font-source-sans)] text-[var(--page-text)]">
         <div className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-[240px_1fr] gap-6 px-6 py-6">
-          <aside className="flex flex-col gap-6 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-            <nav className="flex flex-col gap-2 text-sm">
+          <aside className="flex flex-col gap-6 rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
+            <nav className="flex flex-col gap-2 text-sm uppercase tracking-[0.2em]">
               {navItem("/dashboard/bookings", "Reservas")}
               {navItem("/dashboard/services", "Servicios")}
               {navItem("/dashboard/availability", "Disponibilidad")}
@@ -43,7 +45,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <AuthActions />
             </div>
           </aside>
-          <main className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-6 py-6">
+          <main className="rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-6 py-6">
             <DashboardHeader />
             <div className="pt-6">{children}</div>
           </main>

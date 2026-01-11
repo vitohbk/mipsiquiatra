@@ -309,7 +309,7 @@ export default function PatientsPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Pacientes</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Pacientes</h1>
         <p className="text-sm text-[var(--panel-muted)]">Registro de pacientes del tenant.</p>
       </div>
 

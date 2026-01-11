@@ -14,7 +14,7 @@ export default function AuthActions() {
 
   return (
     <button
-      className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs text-[var(--page-text)]"
+      className="rounded-full border border-[var(--panel-border)] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[var(--brand-copper)] hover:text-[var(--brand-teal)]"
       type="button"
       onClick={handleLogout}
     >

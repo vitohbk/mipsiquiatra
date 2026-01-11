@@ -19,7 +19,8 @@ export default function SettingsPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [brandColor, setBrandColor] = useState("#0f172a");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -42,8 +43,8 @@ export default function SettingsPage() {
         setTenant(tenantData);
         setName(tenantData.name);
         setSlug(tenantData.slug);
-        const color = (tenantData.branding as { brand_color?: string } | null)?.brand_color;
-        if (color) setBrandColor(color);
+        const logo = (tenantData.branding as { logo_url?: string } | null)?.logo_url;
+        if (logo) setLogoUrl(logo);
       }
     };
 
@@ -65,12 +66,31 @@ export default function SettingsPage() {
       return;
     }
 
+    let nextLogoUrl = logoUrl;
+    if (logoFile) {
+      const extension = logoFile.name.split(".").pop() ?? "png";
+      const filePath = `tenant-${activeTenantId}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("tenant-avatars")
+        .upload(filePath, logoFile, {
+          upsert: true,
+          contentType: logoFile.type || "image/png",
+        });
+      if (uploadError) {
+        setError(uploadError.message);
+        return;
+      }
+      const { data: publicUrlData } = supabase.storage.from("tenant-avatars").getPublicUrl(filePath);
+      nextLogoUrl = publicUrlData?.publicUrl ?? null;
+      setLogoUrl(nextLogoUrl);
+    }
+
     const { error: updateError } = await (supabase
       .from("tenants") as any)
       .update({
         name,
         slug,
-        branding: { ...(tenant?.branding ?? {}), brand_color: brandColor },
+        branding: { ...(tenant?.branding ?? {}), logo_url: nextLogoUrl },
       })
       .eq("id", activeTenantId);
 
@@ -85,7 +105,7 @@ export default function SettingsPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Settings</h1>
         <p className="text-sm text-[var(--panel-muted)]">Branding, slug y preferencias.</p>
       </div>
 
@@ -96,6 +116,31 @@ export default function SettingsPage() {
         className="space-y-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6"
         onSubmit={handleSave}
       >
+        <div>
+          <p className="text-sm">Logo (avatar del tenant)</p>
+          <div className="mt-2 flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[var(--panel-border)] bg-white">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="Logo del tenant" className="h-full w-full object-contain p-1" />
+              ) : null}
+            </div>
+            <label className="text-sm">
+              <input
+                type="file"
+                accept="image/*"
+                className="block text-sm"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setLogoFile(file);
+                }}
+              />
+              <span className="mt-1 block text-xs text-[var(--panel-muted)]">
+                JPG o PNG. Se guarda en Supabase Storage.
+              </span>
+            </label>
+          </div>
+        </div>
         <label className="block text-sm">
           Nombre del tenant
           <input
@@ -112,15 +157,6 @@ export default function SettingsPage() {
             value={slug}
             onChange={(event) => setSlug(event.target.value.trim())}
             required
-          />
-        </label>
-        <label className="block text-sm">
-          Color principal
-          <input
-            className="mt-2 h-12 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-            type="color"
-            value={brandColor}
-            onChange={(event) => setBrandColor(event.target.value)}
           />
         </label>
         <button

@@ -106,9 +106,9 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <Image src={logoImage} alt="Mi Psiquiatra" width={56} height={56} className="h-14 w-14 object-contain" />
             <div>
-              <p className="font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">Mi Psiquiatra</p>
-              <p className="text-xs tracking-wide text-[#8b8b8b]">
-                Servicios de Psiquiatría Clínica y mucho más
+              <p className="site-title text-[#2f2f2f]">Mi Psiquiatra</p>
+              <p className="site-description tracking-wide text-[#8b8b8b]">
+                Psiquiatría Clínica para Adultos
               </p>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function Home() {
       </header>
 
       <section
-        className="relative flex min-h-[80vh] items-center overflow-hidden"
+        className="relative flex min-h-[80vh] items-center overflow-hidden text-center"
         style={{
           backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${heroImage})`,
           backgroundSize: "cover",
@@ -164,22 +164,28 @@ export default function Home() {
           <p className="text-lg uppercase tracking-[0.35em] text-white/80">
             Caminos Difíciles, llevan a Lugares Hermosos
           </p>
-          <h1 className="mt-6 font-[var(--font-playfair)] text-4xl md:text-6xl">
+          <h1 className="mt-6 font-[var(--font-playfair)] text-[5rem] leading-[1.1]">
             ¿Necesitas un Psiquiatra?
           </h1>
-          <a
-            href="#quiensoy"
-            className="mt-10 inline-flex items-center rounded-full bg-[#39cec9] px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
-          >
-            Conocer más
-          </a>
+          <div className="mt-10">
+            <a
+              href="#quiensoy"
+              className="inline-flex items-center rounded-full bg-[#39cec9] px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
+            >
+              Agendar una hora
+            </a>
+          </div>
         </div>
       </section>
 
       <section id="quiensoy" className="bg-white py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr]">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
+            ¿Quién soy?
+          </h2>
+        </div>
+        <div className="mx-auto mt-12 grid max-w-6xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
-            <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">¿Quién soy?</h2>
             <Image
               src={marielaImage}
               alt="Mariela Yañez"
@@ -210,14 +216,6 @@ export default function Home() {
               emocional y así encontremos las respuestas o soluciones que necesitan para sentirse plenos.
             </p>
             <p>El camino puede ser difícil, pero podemos llegar a un lugar mejor.</p>
-            <div className="flex items-center gap-4 text-[#b87333]">
-              <a href="https://www.instagram.com/mipsiquiatra" className="hover:text-[#39cec9]">
-                Instagram
-              </a>
-              <a href="https://www.facebook.com/mipsiquiatraCL" className="hover:text-[#39cec9]">
-                Facebook
-              </a>
-            </div>
             <Image src={signatureImage} alt="Firma" width={250} height={106} className="h-20 w-auto" />
           </div>
         </div>
@@ -225,8 +223,10 @@ export default function Home() {
 
       <section id="testimonios" className="bg-[#f9fafb] py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">Testimonios</h2>
-          <p className="mt-4 max-w-2xl text-lg text-[#4b4f58]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
+            Testimonios
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[#4b4f58]">
             Siempre busco que los pacientes logren sentirse cómodos para contarme sus dolencias
             emocionales y, así, poder contribuir a aliviarlos.
           </p>
@@ -250,8 +250,10 @@ export default function Home() {
 
       <section id="servicios" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">Mis servicios</h2>
-          <p className="mt-4 text-lg text-[#4b4f58]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
+            Mis servicios
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[#4b4f58]">
             Mi experiencia laboral y estudios me permiten ayudarte con los siguientes problemas.
           </p>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
@@ -272,10 +274,10 @@ export default function Home() {
 
       <section className="bg-[#f9fafb] py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Cómo trabajaré contigo?
           </h2>
-          <p className="mt-4 text-center text-lg text-[#4b4f58]">
+          <p className="mx-auto mt-4 max-w-3xl text-center text-lg text-[#4b4f58]">
             A diferencia de otras enfermedades, las enfermedades de la mente no se pueden identificar
             con un examen de laboratorio ni de imagen. La principal herramienta para diagnosticarlas es
             a través de la anamnesis o entrevista clínica, pero también se utiliza la observación
@@ -291,7 +293,7 @@ export default function Home() {
             />
             <div className="space-y-8">
               <div className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
-                <p className="text-5xl font-semibold text-[#39cec9]">1.</p>
+                <p className="step-number">1.</p>
                 <h3 className="mt-4 font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">
                   Primera entrevista
                 </h3>
@@ -303,7 +305,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
-                <p className="text-5xl font-semibold text-[#b87333]">2.</p>
+                <p className="step-number">2.</p>
                 <h3 className="mt-4 font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">
                   Control psiquiátrico
                 </h3>
@@ -320,10 +322,10 @@ export default function Home() {
 
       <section className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Dónde nos reuniremos?
           </h2>
-          <p className="mt-4 text-lg text-[#4b4f58]">
+          <p className="mx-auto mt-4 max-w-3xl text-center text-lg text-[#4b4f58]">
             Actualmente todas las atenciones serán por telemedicina. Nuestras reuniones serán a través
             de Zoom o una videollamada de WhatsApp, según preferencia del paciente.
           </p>
@@ -344,7 +346,7 @@ export default function Home() {
 
       <section className="bg-[#f9fafb] py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Cómo comenzar a sanar?
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -366,7 +368,7 @@ export default function Home() {
               },
             ].map((item) => (
               <div key={item.step} className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
-                <p className="text-5xl font-semibold text-[#39cec9]">{item.step}.</p>
+                <p className="step-number">{item.step}.</p>
                 <h3 className="mt-4 font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">
                   {item.title}
                 </h3>
@@ -379,16 +381,16 @@ export default function Home() {
 
       <section className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="font-[var(--font-playfair)] text-4xl text-[#2f2f2f]">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Cuánto cuesta mi consulta?
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-3xl border border-[#f0e4d6] bg-[#fffdf9] p-8 text-center">
-              <p className="text-5xl font-semibold text-[#b87333]">$85.000</p>
+              <p className="price-number">$85.000</p>
               <p className="mt-2 text-[#4b4f58]">Primera entrevista</p>
             </div>
             <div className="rounded-3xl border border-[#f0e4d6] bg-[#fffdf9] p-8 text-center">
-              <p className="text-5xl font-semibold text-[#39cec9]">$65.000</p>
+              <p className="price-number">$65.000</p>
               <p className="mt-2 text-[#4b4f58]">Controles posteriores</p>
             </div>
           </div>
@@ -423,7 +425,7 @@ export default function Home() {
         }}
       >
         <div className="text-center text-white">
-          <h2 className="font-[var(--font-playfair)] text-4xl md:text-5xl">
+          <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Ya quieres comenzar?
           </h2>
           <a

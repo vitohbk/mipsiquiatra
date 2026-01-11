@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { callEdgeFunction } from "@/lib/api/edge";
 import { useActiveTenant } from "@/lib/tenant/useActiveTenant";
+import AvailabilityRuleEditor, { type AvailabilityRuleDraft } from "../../_components/availability-rule-editor";
 
 type Membership = {
   tenant_id: string;
@@ -38,7 +39,6 @@ type BookingLink = {
 };
 
 const slugPattern = /^[a-z0-9-]+$/;
-const weekdayLabels = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 
 function slugify(value: string) {
   return value
@@ -76,9 +76,7 @@ export default function ServicesPage() {
   const [ruleWeekdays, setRuleWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [ruleStartTime, setRuleStartTime] = useState("09:00");
   const [ruleEndTime, setRuleEndTime] = useState("18:00");
-  const [rulesDraft, setRulesDraft] = useState<
-    { weekdays: number[]; startTime: string; endTime: string }[]
-  >([]);
+  const [rulesDraft, setRulesDraft] = useState<AvailabilityRuleDraft[]>([]);
   const [exceptionDate, setExceptionDate] = useState("");
   const [exceptionStart, setExceptionStart] = useState("09:00");
   const [exceptionEnd, setExceptionEnd] = useState("12:00");
@@ -98,12 +96,10 @@ export default function ServicesPage() {
   const [editPrice, setEditPrice] = useState("30000");
   const [editRequiresPayment, setEditRequiresPayment] = useState(true);
   const [editProfessionalId, setEditProfessionalId] = useState("");
-  const [editRuleWeekdays, setEditRuleWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [editRuleWeekdays, setEditRuleWeekdays] = useState<number[]>([]);
   const [editRuleStartTime, setEditRuleStartTime] = useState("09:00");
   const [editRuleEndTime, setEditRuleEndTime] = useState("18:00");
-  const [editRulesDraft, setEditRulesDraft] = useState<
-    { weekdays: number[]; startTime: string; endTime: string }[]
-  >([]);
+  const [editRulesDraft, setEditRulesDraft] = useState<AvailabilityRuleDraft[]>([]);
   const [editExceptionDate, setEditExceptionDate] = useState("");
   const [editExceptionStart, setEditExceptionStart] = useState("09:00");
   const [editExceptionEnd, setEditExceptionEnd] = useState("12:00");
@@ -474,6 +470,17 @@ export default function ServicesPage() {
     setEditRequiresPayment(service.requires_payment);
     setEditProfessionalId(service.professional_user_id);
     setEditAvailabilityLoading(true);
+    setEditRuleWeekdays([]);
+    setEditRuleStartTime("09:00");
+    setEditRuleEndTime("18:00");
+    setEditRulesDraft([]);
+    setEditExceptionDate("");
+    setEditExceptionStart("09:00");
+    setEditExceptionEnd("12:00");
+    setEditExceptionAvailable(false);
+    setEditExceptionAllDay(true);
+    setEditExceptionNote("");
+    setEditExceptionsDraft([]);
 
     if (!activeTenantId) {
       setEditAvailabilityLoading(false);
@@ -509,18 +516,24 @@ export default function ServicesPage() {
         end_time: string;
       }>;
       if (rules.length > 0) {
-        setEditRuleWeekdays(rules.map((rule) => rule.weekday));
-        setEditRuleStartTime(rules[0].start_time);
-        setEditRuleEndTime(rules[0].end_time);
-        setEditRulesDraft([
-          {
-            weekdays: rules.map((rule) => rule.weekday),
-            startTime: rules[0].start_time,
-            endTime: rules[0].end_time,
-          },
-        ]);
+        const grouped = new Map<string, AvailabilityRuleDraft>();
+        rules.forEach((rule) => {
+          const key = `${rule.start_time}-${rule.end_time}`;
+          const current = grouped.get(key) ?? {
+            weekdays: [],
+            startTime: rule.start_time,
+            endTime: rule.end_time,
+          };
+          current.weekdays.push(rule.weekday);
+          grouped.set(key, current);
+        });
+        const groupedRules = Array.from(grouped.values());
+        setEditRulesDraft(groupedRules);
+        setEditRuleWeekdays(groupedRules[0]?.weekdays ?? []);
+        setEditRuleStartTime(groupedRules[0]?.startTime ?? "09:00");
+        setEditRuleEndTime(groupedRules[0]?.endTime ?? "18:00");
       } else {
-        setEditRuleWeekdays([1, 2, 3, 4, 5]);
+        setEditRuleWeekdays([]);
         setEditRuleStartTime("09:00");
         setEditRuleEndTime("18:00");
         setEditRulesDraft([]);
@@ -574,12 +587,7 @@ export default function ServicesPage() {
 
     if (!editingServiceId) return;
 
-    const resolvedRules =
-      editRulesDraft.length > 0
-        ? editRulesDraft
-        : editRuleWeekdays.length > 0
-          ? [{ weekdays: editRuleWeekdays, startTime: editRuleStartTime, endTime: editRuleEndTime }]
-          : [];
+    const resolvedRules = editRulesDraft;
 
     for (const rule of resolvedRules) {
       if (rule.weekdays.length === 0) {
@@ -733,7 +741,7 @@ export default function ServicesPage() {
     setEditProfessionalId("");
     setEditRulesDraft([]);
     setEditExceptionsDraft([]);
-    setEditRuleWeekdays([1, 2, 3, 4, 5]);
+    setEditRuleWeekdays([]);
     setEditRuleStartTime("09:00");
     setEditRuleEndTime("18:00");
     setEditExceptionDate("");
@@ -777,7 +785,7 @@ export default function ServicesPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Servicios</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Servicios</h1>
         <p className="text-sm text-[var(--panel-muted)]">Gestiona catalogo, duraciones y precios.</p>
       </div>
 
@@ -1057,120 +1065,47 @@ export default function ServicesPage() {
                   </label>
                 </>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 md:col-span-4">
+                <div className="grid gap-4 md:col-span-4">
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">Disponibilidad</h3>
-                      <button
-                        className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs"
-                        type="button"
-                        onClick={() => {
-                          setFormError(null);
-                          if (editRuleWeekdays.length === 0) {
-                            setFormError("Selecciona al menos un dia.");
-                            return;
+                    <AvailabilityRuleEditor
+                      title="Disponibilidad"
+                      weekdays={editRuleWeekdays}
+                      setWeekdays={setEditRuleWeekdays}
+                      startTime={editRuleStartTime}
+                      endTime={editRuleEndTime}
+                      onStartTimeChange={setEditRuleStartTime}
+                      onEndTimeChange={setEditRuleEndTime}
+                      onAddRule={() => {
+                        setFormError(null);
+                        if (editRuleWeekdays.length === 0) {
+                          setFormError("Selecciona al menos un dia.");
+                          return;
+                        }
+                        if (editRuleStartTime >= editRuleEndTime) {
+                          setFormError("La hora de inicio debe ser menor a la de fin.");
+                          return;
+                        }
+                        setEditRulesDraft((current) => [
+                          ...current,
+                          {
+                            weekdays: [...editRuleWeekdays],
+                            startTime: editRuleStartTime,
+                            endTime: editRuleEndTime,
+                          },
+                        ]);
+                      }}
+                      loading={editAvailabilityLoading}
+                      rules={editRulesDraft}
+                      onRemoveRule={(index) =>
+                        setEditRulesDraft((current) => {
+                          const next = current.filter((_, idx) => idx !== index);
+                          if (next.length === 0) {
+                            setEditRuleWeekdays([]);
                           }
-                          if (editRuleStartTime >= editRuleEndTime) {
-                            setFormError("La hora de inicio debe ser menor a la de fin.");
-                            return;
-                          }
-                          setEditRulesDraft((current) => [
-                            ...current,
-                            {
-                              weekdays: [...editRuleWeekdays],
-                              startTime: editRuleStartTime,
-                              endTime: editRuleEndTime,
-                            },
-                          ]);
-                        }}
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                    {editAvailabilityLoading ? (
-                      <p className="mt-2 text-xs text-[var(--panel-muted)]">Cargando disponibilidad...</p>
-                    ) : (
-                      <>
-                        <div className="mt-3 grid gap-4 md:grid-cols-3">
-                          <div className="space-y-2 text-sm md:col-span-3">
-                            <p className="text-[var(--panel-muted)]">Dias</p>
-                            <div className="flex flex-wrap gap-2">
-                              {weekdayLabels.map((label, idx) => {
-                                const active = editRuleWeekdays.includes(idx);
-                                return (
-                                  <button
-                                    key={label}
-                                    type="button"
-                                    className={`rounded-full border px-3 py-1 text-xs ${
-                                      active
-                                        ? "border-[var(--page-text)] bg-[var(--page-text)] text-[var(--page-bg)]"
-                                        : "border-[var(--panel-border)] text-[var(--page-text)] hover:border-[var(--page-text)]"
-                                    }`}
-                                    onClick={() => {
-                                      setEditRuleWeekdays((current) =>
-                                        current.includes(idx)
-                                          ? current.filter((day) => day !== idx)
-                                          : [...current, idx],
-                                      );
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <label className="text-sm">
-                            Inicio
-                            <input
-                              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                              type="time"
-                              value={editRuleStartTime}
-                              onChange={(event) => setEditRuleStartTime(event.target.value)}
-                              required
-                            />
-                          </label>
-                          <label className="text-sm">
-                            Fin
-                            <input
-                              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                              type="time"
-                              value={editRuleEndTime}
-                              onChange={(event) => setEditRuleEndTime(event.target.value)}
-                              required
-                            />
-                          </label>
-                        </div>
-                        {editRulesDraft.length > 0 ? (
-                          <div className="mt-4 space-y-2 text-sm">
-                            {editRulesDraft.map((rule, index) => (
-                              <div
-                                key={`${rule.startTime}-${rule.endTime}-${index}`}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--panel-border)] px-3 py-2"
-                              >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs text-[var(--panel-muted)]">
-                                    {rule.weekdays.map((day) => weekdayLabels[day]).join(", ")}
-                                  </span>
-                                  <span className="text-xs">
-                                    {rule.startTime} - {rule.endTime}
-                                  </span>
-                                </div>
-                                <button
-                                  className="text-xs text-[var(--panel-muted)]"
-                                  type="button"
-                                  onClick={() =>
-                                    setEditRulesDraft((current) => current.filter((_, idx) => idx !== index))
-                                  }
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </>
-                    )}
+                          return next;
+                        })
+                      }
+                    />
                   </div>
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
                     <div className="flex items-center justify-between">
@@ -1482,108 +1417,36 @@ export default function ServicesPage() {
                   </label>
                 </>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 md:col-span-4">
+                <div className="grid gap-4 md:col-span-4">
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">Disponibilidad</h3>
-                      <button
-                        className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs"
-                        type="button"
-                        onClick={() => {
-                          setFormError(null);
-                          if (ruleWeekdays.length === 0) {
-                            setFormError("Selecciona al menos un dia.");
-                            return;
-                          }
-                          if (ruleStartTime >= ruleEndTime) {
-                            setFormError("La hora de inicio debe ser menor a la de fin.");
-                            return;
-                          }
-                          setRulesDraft((current) => [
-                            ...current,
-                            { weekdays: [...ruleWeekdays], startTime: ruleStartTime, endTime: ruleEndTime },
-                          ]);
-                        }}
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                    <div className="mt-3 grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2 text-sm md:col-span-3">
-                        <p className="text-[var(--panel-muted)]">Dias</p>
-                        <div className="flex flex-wrap gap-2">
-                          {weekdayLabels.map((label, idx) => {
-                            const active = ruleWeekdays.includes(idx);
-                            return (
-                              <button
-                                key={label}
-                                type="button"
-                                className={`rounded-full border px-3 py-1 text-xs ${
-                                  active
-                                    ? "border-[var(--page-text)] bg-[var(--page-text)] text-[var(--page-bg)]"
-                                    : "border-[var(--panel-border)] text-[var(--page-text)] hover:border-[var(--page-text)]"
-                                }`}
-                                onClick={() => {
-                                  setRuleWeekdays((current) =>
-                                    current.includes(idx) ? current.filter((day) => day !== idx) : [...current, idx],
-                                  );
-                                }}
-                              >
-                                {label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <label className="text-sm">
-                        Inicio
-                        <input
-                          className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                          type="time"
-                          value={ruleStartTime}
-                          onChange={(event) => setRuleStartTime(event.target.value)}
-                          required
-                        />
-                      </label>
-                      <label className="text-sm">
-                        Fin
-                        <input
-                          className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                          type="time"
-                          value={ruleEndTime}
-                          onChange={(event) => setRuleEndTime(event.target.value)}
-                          required
-                        />
-                      </label>
-                    </div>
-                    {rulesDraft.length > 0 ? (
-                      <div className="mt-4 space-y-2 text-sm">
-                        {rulesDraft.map((rule, index) => (
-                          <div
-                            key={`${rule.startTime}-${rule.endTime}-${index}`}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--panel-border)] px-3 py-2"
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs text-[var(--panel-muted)]">
-                                {rule.weekdays.map((day) => weekdayLabels[day]).join(", ")}
-                              </span>
-                              <span className="text-xs">
-                                {rule.startTime} - {rule.endTime}
-                              </span>
-                            </div>
-                            <button
-                              className="text-xs text-[var(--panel-muted)]"
-                              type="button"
-                              onClick={() =>
-                                setRulesDraft((current) => current.filter((_, idx) => idx !== index))
-                              }
-                            >
-                              Quitar
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
+                    <AvailabilityRuleEditor
+                      title="Disponibilidad"
+                      weekdays={ruleWeekdays}
+                      setWeekdays={setRuleWeekdays}
+                      startTime={ruleStartTime}
+                      endTime={ruleEndTime}
+                      onStartTimeChange={setRuleStartTime}
+                      onEndTimeChange={setRuleEndTime}
+                      onAddRule={() => {
+                        setFormError(null);
+                        if (ruleWeekdays.length === 0) {
+                          setFormError("Selecciona al menos un dia.");
+                          return;
+                        }
+                        if (ruleStartTime >= ruleEndTime) {
+                          setFormError("La hora de inicio debe ser menor a la de fin.");
+                          return;
+                        }
+                        setRulesDraft((current) => [
+                          ...current,
+                          { weekdays: [...ruleWeekdays], startTime: ruleStartTime, endTime: ruleEndTime },
+                        ]);
+                      }}
+                      rules={rulesDraft}
+                      onRemoveRule={(index) =>
+                        setRulesDraft((current) => current.filter((_, idx) => idx !== index))
+                      }
+                    />
                   </div>
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
                     <div className="flex items-center justify-between">

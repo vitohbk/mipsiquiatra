@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { callEdgeFunction } from "@/lib/api/edge";
 import { useActiveTenant } from "@/lib/tenant/useActiveTenant";
+import AvailabilityRuleEditor, { type AvailabilityRuleDraft } from "../../_components/availability-rule-editor";
 
 const roleLabels = {
   owner: "Owner",
@@ -14,7 +15,6 @@ const roleLabels = {
 };
 
 const editableRoles = ["admin", "professional", "staff"] as const;
-const weekdayLabels = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 
 type Member = {
   id: string;
@@ -22,7 +22,12 @@ type Member = {
   user_id: string;
   role: string;
   secondary_role?: string | null;
-  profiles?: { email: string | null; full_name: string | null; specialty?: string | null } | null;
+  profiles?: {
+    email: string | null;
+    full_name: string | null;
+    specialty?: string | null;
+    avatar_url?: string | null;
+  } | null;
 };
 
 export default function UsersPage() {
@@ -40,9 +45,7 @@ export default function UsersPage() {
   const [inviteRuleWeekdays, setInviteRuleWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [inviteRuleStartTime, setInviteRuleStartTime] = useState("09:00");
   const [inviteRuleEndTime, setInviteRuleEndTime] = useState("18:00");
-  const [inviteRulesDraft, setInviteRulesDraft] = useState<
-    { weekdays: number[]; startTime: string; endTime: string }[]
-  >([]);
+  const [inviteRulesDraft, setInviteRulesDraft] = useState<AvailabilityRuleDraft[]>([]);
   const [inviteExceptionDate, setInviteExceptionDate] = useState("");
   const [inviteExceptionStart, setInviteExceptionStart] = useState("09:00");
   const [inviteExceptionEnd, setInviteExceptionEnd] = useState("12:00");
@@ -56,14 +59,14 @@ export default function UsersPage() {
   const [editName, setEditName] = useState("");
   const [editSpecialty, setEditSpecialty] = useState("");
   const [editRole, setEditRole] = useState("staff");
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editSecondaryRole, setEditSecondaryRole] = useState<string | null>(null);
   const [editTab, setEditTab] = useState<"details" | "availability">("details");
   const [editRuleWeekdays, setEditRuleWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [editRuleStartTime, setEditRuleStartTime] = useState("09:00");
   const [editRuleEndTime, setEditRuleEndTime] = useState("18:00");
-  const [editRulesDraft, setEditRulesDraft] = useState<
-    { weekdays: number[]; startTime: string; endTime: string }[]
-  >([]);
+  const [editRulesDraft, setEditRulesDraft] = useState<AvailabilityRuleDraft[]>([]);
   const [editExceptionDate, setEditExceptionDate] = useState("");
   const [editExceptionStart, setEditExceptionStart] = useState("09:00");
   const [editExceptionEnd, setEditExceptionEnd] = useState("12:00");
@@ -97,7 +100,7 @@ export default function UsersPage() {
       if (userIds.length > 0) {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("user_id, email, full_name, specialty")
+          .select("user_id, email, full_name, specialty, avatar_url")
           .in("user_id", userIds);
 
         if (profileError) {
@@ -111,6 +114,7 @@ export default function UsersPage() {
             email?: string | null;
             full_name?: string | null;
             specialty?: string | null;
+            avatar_url?: string | null;
           }>).map((profile) => [profile.user_id, profile]),
         );
         normalized.forEach((member) => {
@@ -120,6 +124,7 @@ export default function UsersPage() {
                 email: profile.email ?? null,
                 full_name: profile.full_name ?? null,
                 specialty: profile.specialty ?? null,
+                avatar_url: profile.avatar_url ?? null,
               }
             : null;
         });
@@ -160,6 +165,19 @@ export default function UsersPage() {
     setEditSpecialty(member.profiles?.specialty ?? "");
     setEditRole(member.role);
     setEditSecondaryRole(member.secondary_role ?? null);
+    setEditAvatarUrl(member.profiles?.avatar_url ?? null);
+    setEditAvatarFile(null);
+    setEditRuleWeekdays([]);
+    setEditRuleStartTime("09:00");
+    setEditRuleEndTime("18:00");
+    setEditRulesDraft([]);
+    setEditExceptionDate("");
+    setEditExceptionStart("09:00");
+    setEditExceptionEnd("12:00");
+    setEditExceptionAvailable(false);
+    setEditExceptionAllDay(true);
+    setEditExceptionNote("");
+    setEditExceptionsDraft([]);
   };
 
   useEffect(() => {
@@ -194,18 +212,24 @@ export default function UsersPage() {
           end_time: string;
         }>;
         if (rules.length > 0) {
-          setEditRuleWeekdays(rules.map((rule) => rule.weekday));
-          setEditRuleStartTime(rules[0].start_time);
-          setEditRuleEndTime(rules[0].end_time);
-          setEditRulesDraft([
-            {
-              weekdays: rules.map((rule) => rule.weekday),
-              startTime: rules[0].start_time,
-              endTime: rules[0].end_time,
-            },
-          ]);
+          const grouped = new Map<string, AvailabilityRuleDraft>();
+          rules.forEach((rule) => {
+            const key = `${rule.start_time}-${rule.end_time}`;
+            const current = grouped.get(key) ?? {
+              weekdays: [],
+              startTime: rule.start_time,
+              endTime: rule.end_time,
+            };
+            current.weekdays.push(rule.weekday);
+            grouped.set(key, current);
+          });
+          const groupedRules = Array.from(grouped.values());
+          setEditRulesDraft(groupedRules);
+          setEditRuleWeekdays(groupedRules[0]?.weekdays ?? []);
+          setEditRuleStartTime(groupedRules[0]?.startTime ?? "09:00");
+          setEditRuleEndTime(groupedRules[0]?.endTime ?? "18:00");
         } else {
-          setEditRuleWeekdays([1, 2, 3, 4, 5]);
+          setEditRuleWeekdays([]);
           setEditRuleStartTime("09:00");
           setEditRuleEndTime("18:00");
           setEditRulesDraft([]);
@@ -284,7 +308,7 @@ export default function UsersPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
+        <h1 className="text-xl font-semibold md:text-2xl">Usuarios</h1>
         <p className="text-sm text-[var(--panel-muted)]">Roles del equipo.</p>
       </div>
 
@@ -385,12 +409,7 @@ export default function UsersPage() {
                 setError(null);
                 setSavingEdit(true);
                 try {
-                  const resolvedRules =
-                    editRulesDraft.length > 0
-                      ? editRulesDraft
-                      : editRuleWeekdays.length > 0
-                        ? [{ weekdays: editRuleWeekdays, startTime: editRuleStartTime, endTime: editRuleEndTime }]
-                        : [];
+                  const resolvedRules = editRulesDraft;
 
                   for (const rule of resolvedRules) {
                     if (rule.weekdays.length === 0) {
@@ -430,23 +449,40 @@ export default function UsersPage() {
                     }
                   }
 
+                  const profileUpdates: Record<string, string | null> = {};
                   if (editName.trim() !== (editingMember.profiles?.full_name ?? "")) {
+                    profileUpdates.full_name = editName.trim();
+                  }
+                  if (editSpecialty.trim() !== (editingMember.profiles?.specialty ?? "")) {
+                    profileUpdates.specialty = editSpecialty.trim() || null;
+                  }
+                  if (editAvatarFile) {
+                    const extension = editAvatarFile.name.split(".").pop() ?? "png";
+                    const filePath = `users/${editingMember.user_id}.${extension}`;
+                    const { error: uploadError } = await supabase.storage
+                      .from("avatars")
+                      .upload(filePath, editAvatarFile, {
+                        upsert: true,
+                        contentType: editAvatarFile.type || "image/png",
+                      });
+                    if (uploadError) {
+                      throw uploadError;
+                    }
+                    const { data: publicUrlData } = supabase.storage
+                      .from("avatars")
+                      .getPublicUrl(filePath);
+                    const nextAvatarUrl = publicUrlData?.publicUrl ?? null;
+                    profileUpdates.avatar_url = nextAvatarUrl;
+                    setEditAvatarUrl(nextAvatarUrl);
+                  }
+
+                  if (Object.keys(profileUpdates).length > 0) {
                     const { error: profileError } = await (supabase
                       .from("profiles") as any)
-                      .update({ full_name: editName.trim() })
+                      .update(profileUpdates)
                       .eq("user_id", editingMember.user_id);
                     if (profileError) {
                       throw profileError;
-                    }
-                  }
-
-                  if (editSpecialty.trim() !== (editingMember.profiles?.specialty ?? "")) {
-                    const { error: specialtyError } = await (supabase
-                      .from("profiles") as any)
-                      .update({ specialty: editSpecialty.trim() || null })
-                      .eq("user_id", editingMember.user_id);
-                    if (specialtyError) {
-                      throw specialtyError;
                     }
                   }
 
@@ -542,6 +578,31 @@ export default function UsersPage() {
             >
               {editTab === "details" ? (
                 <>
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-[var(--panel-muted)]">Avatar del profesional</p>
+                    <div className="mt-2 flex items-center gap-4">
+                      <div className="h-14 w-14 overflow-hidden rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)]">
+                        {editAvatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={editAvatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                        ) : null}
+                      </div>
+                      <label className="text-sm">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="block text-sm"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0] ?? null;
+                            setEditAvatarFile(file);
+                          }}
+                        />
+                        <span className="mt-1 block text-xs text-[var(--panel-muted)]">
+                          JPG o PNG. Se guarda en Supabase Storage.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
                   <label className="text-sm">
                     Nombre
                     <input
@@ -611,120 +672,47 @@ export default function UsersPage() {
                   </label>
                 </>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 md:col-span-2">
+                <div className="grid gap-4 md:col-span-2">
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">Disponibilidad</h3>
-                      <button
-                        className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs"
-                        type="button"
-                        onClick={() => {
-                          setError(null);
-                          if (editRuleWeekdays.length === 0) {
-                            setError("Selecciona al menos un dia.");
-                            return;
+                    <AvailabilityRuleEditor
+                      title="Disponibilidad"
+                      weekdays={editRuleWeekdays}
+                      setWeekdays={setEditRuleWeekdays}
+                      startTime={editRuleStartTime}
+                      endTime={editRuleEndTime}
+                      onStartTimeChange={setEditRuleStartTime}
+                      onEndTimeChange={setEditRuleEndTime}
+                      onAddRule={() => {
+                        setError(null);
+                        if (editRuleWeekdays.length === 0) {
+                          setError("Selecciona al menos un dia.");
+                          return;
+                        }
+                        if (editRuleStartTime >= editRuleEndTime) {
+                          setError("La hora de inicio debe ser menor a la de fin.");
+                          return;
+                        }
+                        setEditRulesDraft((current) => [
+                          ...current,
+                          {
+                            weekdays: [...editRuleWeekdays],
+                            startTime: editRuleStartTime,
+                            endTime: editRuleEndTime,
+                          },
+                        ]);
+                      }}
+                      loading={editAvailabilityLoading}
+                      rules={editRulesDraft}
+                      onRemoveRule={(index) =>
+                        setEditRulesDraft((current) => {
+                          const next = current.filter((_, idx) => idx !== index);
+                          if (next.length === 0) {
+                            setEditRuleWeekdays([]);
                           }
-                          if (editRuleStartTime >= editRuleEndTime) {
-                            setError("La hora de inicio debe ser menor a la de fin.");
-                            return;
-                          }
-                          setEditRulesDraft((current) => [
-                            ...current,
-                            {
-                              weekdays: [...editRuleWeekdays],
-                              startTime: editRuleStartTime,
-                              endTime: editRuleEndTime,
-                            },
-                          ]);
-                        }}
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                    {editAvailabilityLoading ? (
-                      <p className="mt-2 text-xs text-[var(--panel-muted)]">Cargando disponibilidad...</p>
-                    ) : (
-                      <>
-                        <div className="mt-3 grid gap-4 md:grid-cols-3">
-                          <div className="space-y-2 text-sm md:col-span-3">
-                            <p className="text-[var(--panel-muted)]">Dias</p>
-                            <div className="flex flex-wrap gap-2">
-                              {weekdayLabels.map((label, idx) => {
-                                const active = editRuleWeekdays.includes(idx);
-                                return (
-                                  <button
-                                    key={label}
-                                    type="button"
-                                    className={`rounded-full border px-3 py-1 text-xs ${
-                                      active
-                                        ? "border-[var(--page-text)] bg-[var(--page-text)] text-[var(--page-bg)]"
-                                        : "border-[var(--panel-border)] text-[var(--page-text)] hover:border-[var(--page-text)]"
-                                    }`}
-                                    onClick={() => {
-                                      setEditRuleWeekdays((current) =>
-                                        current.includes(idx)
-                                          ? current.filter((day) => day !== idx)
-                                          : [...current, idx],
-                                      );
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <label className="text-sm">
-                            Inicio
-                            <input
-                              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                              type="time"
-                              value={editRuleStartTime}
-                              onChange={(event) => setEditRuleStartTime(event.target.value)}
-                              required
-                            />
-                          </label>
-                          <label className="text-sm">
-                            Fin
-                            <input
-                              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                              type="time"
-                              value={editRuleEndTime}
-                              onChange={(event) => setEditRuleEndTime(event.target.value)}
-                              required
-                            />
-                          </label>
-                        </div>
-                        {editRulesDraft.length > 0 ? (
-                          <div className="mt-4 space-y-2 text-sm">
-                            {editRulesDraft.map((rule, index) => (
-                              <div
-                                key={`${rule.startTime}-${rule.endTime}-${index}`}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--panel-border)] px-3 py-2"
-                              >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs text-[var(--panel-muted)]">
-                                    {rule.weekdays.map((day) => weekdayLabels[day]).join(", ")}
-                                  </span>
-                                  <span className="text-xs">
-                                    {rule.startTime} - {rule.endTime}
-                                  </span>
-                                </div>
-                                <button
-                                  className="text-xs text-[var(--panel-muted)]"
-                                  type="button"
-                                  onClick={() =>
-                                    setEditRulesDraft((current) => current.filter((_, idx) => idx !== index))
-                                  }
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </>
-                    )}
+                          return next;
+                        })
+                      }
+                    />
                   </div>
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
                     <div className="flex items-center justify-between">
@@ -1077,114 +1065,40 @@ export default function UsersPage() {
                   </label>
                 </>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 md:col-span-2">
+                <div className="grid gap-4 md:col-span-2">
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">Disponibilidad</h3>
-                      <button
-                        className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs"
-                        type="button"
-                        onClick={() => {
-                          setError(null);
-                          if (inviteRuleWeekdays.length === 0) {
-                            setError("Selecciona al menos un dia.");
-                            return;
-                          }
-                          if (inviteRuleStartTime >= inviteRuleEndTime) {
-                            setError("La hora de inicio debe ser menor a la de fin.");
-                            return;
-                          }
-                          setInviteRulesDraft((current) => [
-                            ...current,
-                            {
-                              weekdays: [...inviteRuleWeekdays],
-                              startTime: inviteRuleStartTime,
-                              endTime: inviteRuleEndTime,
-                            },
-                          ]);
-                        }}
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                    <div className="mt-3 grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2 text-sm md:col-span-3">
-                        <p className="text-[var(--panel-muted)]">Dias</p>
-                        <div className="flex flex-wrap gap-2">
-                          {weekdayLabels.map((label, idx) => {
-                            const active = inviteRuleWeekdays.includes(idx);
-                            return (
-                              <button
-                                key={label}
-                                type="button"
-                                className={`rounded-full border px-3 py-1 text-xs ${
-                                  active
-                                    ? "border-[var(--page-text)] bg-[var(--page-text)] text-[var(--page-bg)]"
-                                    : "border-[var(--panel-border)] text-[var(--page-text)] hover:border-[var(--page-text)]"
-                                }`}
-                                onClick={() => {
-                                  setInviteRuleWeekdays((current) =>
-                                    current.includes(idx)
-                                      ? current.filter((day) => day !== idx)
-                                      : [...current, idx],
-                                  );
-                                }}
-                              >
-                                {label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <label className="text-sm">
-                        Inicio
-                        <input
-                          className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                          type="time"
-                          value={inviteRuleStartTime}
-                          onChange={(event) => setInviteRuleStartTime(event.target.value)}
-                          required
-                        />
-                      </label>
-                      <label className="text-sm">
-                        Fin
-                        <input
-                          className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                          type="time"
-                          value={inviteRuleEndTime}
-                          onChange={(event) => setInviteRuleEndTime(event.target.value)}
-                          required
-                        />
-                      </label>
-                    </div>
-                    {inviteRulesDraft.length > 0 ? (
-                      <div className="mt-4 space-y-2 text-sm">
-                        {inviteRulesDraft.map((rule, index) => (
-                          <div
-                            key={`${rule.startTime}-${rule.endTime}-${index}`}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--panel-border)] px-3 py-2"
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs text-[var(--panel-muted)]">
-                                {rule.weekdays.map((day) => weekdayLabels[day]).join(", ")}
-                              </span>
-                              <span className="text-xs">
-                                {rule.startTime} - {rule.endTime}
-                              </span>
-                            </div>
-                            <button
-                              className="text-xs text-[var(--panel-muted)]"
-                              type="button"
-                              onClick={() =>
-                                setInviteRulesDraft((current) => current.filter((_, idx) => idx !== index))
-                              }
-                            >
-                              Quitar
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
+                    <AvailabilityRuleEditor
+                      title="Disponibilidad"
+                      weekdays={inviteRuleWeekdays}
+                      setWeekdays={setInviteRuleWeekdays}
+                      startTime={inviteRuleStartTime}
+                      endTime={inviteRuleEndTime}
+                      onStartTimeChange={setInviteRuleStartTime}
+                      onEndTimeChange={setInviteRuleEndTime}
+                      onAddRule={() => {
+                        setError(null);
+                        if (inviteRuleWeekdays.length === 0) {
+                          setError("Selecciona al menos un dia.");
+                          return;
+                        }
+                        if (inviteRuleStartTime >= inviteRuleEndTime) {
+                          setError("La hora de inicio debe ser menor a la de fin.");
+                          return;
+                        }
+                        setInviteRulesDraft((current) => [
+                          ...current,
+                          {
+                            weekdays: [...inviteRuleWeekdays],
+                            startTime: inviteRuleStartTime,
+                            endTime: inviteRuleEndTime,
+                          },
+                        ]);
+                      }}
+                      rules={inviteRulesDraft}
+                      onRemoveRule={(index) =>
+                        setInviteRulesDraft((current) => current.filter((_, idx) => idx !== index))
+                      }
+                    />
                   </div>
                   <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
                     <div className="flex items-center justify-between">

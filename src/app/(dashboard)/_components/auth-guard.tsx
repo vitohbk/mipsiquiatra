@@ -33,7 +33,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--page-bg)] text-[var(--page-text)]">
+      <div className="dashboard-brand flex min-h-screen items-center justify-center bg-[var(--page-bg)] text-[var(--page-text)]">
         Cargando...
       </div>
     );

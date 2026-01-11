@@ -39,27 +39,27 @@ export default function BookingThanksPage() {
       : "Gracias por confiar en nosotros para acompañarte en este proceso.";
 
   return (
-    <main className="min-h-screen bg-[var(--page-bg)] px-6 py-16 text-[var(--page-text)]">
-      <div className="mx-auto w-full max-w-xl space-y-6 rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-8 shadow-sm">
+    <main className="min-h-screen bg-[var(--brand-bg)] px-6 py-16 font-[var(--font-source-sans)] text-[var(--brand-body)]">
+      <div className="mx-auto w-full max-w-xl space-y-6 rounded-3xl border border-[var(--brand-border)] bg-white p-8 shadow-sm">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-[var(--panel-muted)]">Reserva</p>
-          <h1 className="text-3xl font-semibold">{title}</h1>
-          <p className="text-sm text-[var(--panel-muted)]">{message}</p>
+          <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-copper)]">Reserva</p>
+          <h1 className="text-xl font-[var(--font-playfair)] text-[var(--brand-ink)]">{title}</h1>
+          <p className="text-sm text-[var(--brand-body)]">{message}</p>
         </div>
-        <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-soft)] p-4 text-sm text-[var(--panel-muted)]">
+        <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-paper)] p-4 text-base text-[var(--brand-body)]">
           {helper} Si el correo no llega en unos minutos, revisa spam.
         </div>
-        <p className="text-sm text-[var(--panel-muted)]">{closing}</p>
+        <p className="text-base text-[var(--brand-body)]">{closing}</p>
         <div className="flex flex-wrap gap-3">
           <Link
-            className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+            className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black"
             href={`/${params.slug}`}
           >
             Volver a la reserva
           </Link>
           {status === "failed" ? (
             <Link
-              className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
+              className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
               href={`/${params.slug}`}
             >
               Intentar de nuevo

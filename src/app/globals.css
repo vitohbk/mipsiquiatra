@@ -9,6 +9,15 @@
   --panel-border: #e2e8f0;
   --panel-muted: #475569;
   --panel-soft: #f1f5f9;
+  --brand-bg: #f9fafb;
+  --brand-paper: #fffdf9;
+  --brand-border: #f0e4d6;
+  --brand-soft: #f4ece2;
+  --brand-ink: #2f2f2f;
+  --brand-body: #4b4f58;
+  --brand-muted: #8b8b8b;
+  --brand-teal: #39cec9;
+  --brand-copper: #b87333;
 }
 
 @theme inline {
@@ -21,7 +30,61 @@
 body {
   background: var(--page-bg);
   color: var(--page-text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-source-sans), "Source Sans Pro", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-weight: 400;
+}
+
+h1 {
+  line-height: 1.2;
+}
+
+.site-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-weight: 400;
+  font-size: 1.8rem;
+  line-height: 1.23em;
+}
+
+.site-description {
+  font-size: 0.75rem;
+}
+
+.step-number {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 6rem;
+  line-height: 1;
+  font-weight: 400;
+  color: #000000;
+}
+
+.price-number {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 4rem;
+  line-height: 1;
+  font-weight: 400;
+  color: #000000;
+}
+
+.dashboard-brand {
+  --page-bg: var(--brand-bg);
+  --page-text: var(--brand-ink);
+  --panel-bg: var(--brand-paper);
+  --panel-border: var(--brand-border);
+  --panel-muted: var(--brand-muted);
+  --panel-soft: var(--brand-soft);
+}
+
+.dashboard-brand .bg-\[var\(--page-text\)\] {
+  --page-text: var(--brand-teal);
 }
 
 
@@ -43,7 +106,7 @@ select {
 }
 
 .badge {
-  border: 1px solid #c7dbf6;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-paper);
+  color: var(--brand-copper);
 }

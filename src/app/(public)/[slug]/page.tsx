@@ -27,6 +27,8 @@ type ServiceInfo = {
   currency: string;
   requires_payment: boolean;
   professional_name?: string | null;
+  professional_specialty?: string | null;
+  professional_avatar_url?: string | null;
 };
 
 type TenantInfo = {
@@ -304,70 +306,94 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--page-bg)] px-6 py-12 text-[var(--page-text)]">
+    <main className="min-h-screen bg-[var(--brand-bg)] px-6 py-12 font-[var(--font-source-sans)] text-[var(--brand-body)]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <Link className="text-sm text-[var(--panel-muted)]" href="/">
+        <Link
+          className="text-sm uppercase tracking-[0.35em] text-[var(--brand-copper)] hover:text-[var(--brand-teal)]"
+          href="/"
+        >
           ← Volver
         </Link>
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 shrink-0 rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)] shadow-sm ring-1 ring-black/5" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-sm ring-1 ring-black/5">
+            {(() => {
+              const logoUrl = (tenant?.branding as { logo_url?: string } | null)?.logo_url;
+              return logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+              ) : null;
+            })()}
+          </div>
           <div className="space-y-0.5">
-            <p className="text-xs uppercase tracking-[0.25em] text-[var(--panel-muted)] opacity-60">
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--brand-muted)] opacity-70">
               {tenant?.name ?? "Reserva"}
             </p>
-            <h1 className="text-4xl font-semibold leading-tight">{service?.name ?? `Reserva para ${slug}`}</h1>
+            <h1 className="text-xl font-[var(--font-playfair)] leading-tight text-[var(--brand-ink)] md:text-2xl">
+              {service?.name ?? `Reserva para ${slug}`}
+            </h1>
           </div>
         </div>
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
         <div
-          className={`grid items-start gap-6 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 ${
+          className={`grid items-start gap-6 rounded-3xl border border-[var(--brand-border)] bg-white p-6 shadow-sm ${
             bookingStep === 1 ? "lg:grid-cols-[0.95fr_2.05fr]" : "lg:grid-cols-[1.1fr_1.9fr]"
           }`}
         >
           <div
-            className={`rounded-2xl border border-[var(--panel-border)] bg-[#f7f8fa] p-4 shadow-sm ${
+            className={`rounded-3xl border border-[var(--brand-border)] bg-[var(--brand-paper)] p-4 shadow-sm ${
               bookingStep === 1 ? "lg:col-span-1" : "lg:col-span-1"
             }`}
           >
             <div className="space-y-3">
               <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 shrink-0 rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)] shadow-sm ring-1 ring-black/5" />
-                <div>
-                  <p className="text-sm font-semibold text-[var(--page-text)]">
-                    {service?.professional_name ?? "Profesional"}
-                  </p>
-                    <p className="text-xs text-[var(--panel-muted)] opacity-70">Especialidad</p>
+                <div className="flex items-center gap-3">
+                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-sm ring-1 ring-black/5">
+                  {service?.professional_avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={service.professional_avatar_url}
+                      alt={service?.professional_name ?? "Profesional"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--brand-ink)]">
+                      {service?.professional_name ?? "Profesional"}
+                    </p>
+                    <p className="text-xs text-[var(--brand-muted)] opacity-70">
+                      {service?.professional_specialty ?? "Especialidad"}
+                    </p>
                   </div>
                 </div>
                 {service?.description ? (
-                  <p className="text-xs text-[var(--panel-muted)] opacity-70">{service.description}</p>
+                  <p className="text-xs text-[var(--brand-muted)] opacity-70">{service.description}</p>
                 ) : null}
               </div>
-              <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide text-[var(--panel-muted)]">
+              <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide text-[var(--brand-body)]">
                 {service ? (
-                  <span className="badge rounded-full px-2 py-1">
+                  <span className="rounded-full border border-[var(--brand-border)] bg-white px-2 py-1 text-[var(--brand-copper)]">
                     ${service.price_clp.toLocaleString("es-CL")}
                   </span>
                 ) : null}
                 {service?.requires_payment ? (
-                  <span className="badge rounded-full px-2 py-1">
+                  <span className="rounded-full border border-[var(--brand-border)] bg-white px-2 py-1">
                     Pago online
                   </span>
                 ) : null}
                 {service?.modality ? (
-                  <span className="badge rounded-full px-2 py-1">
+                  <span className="rounded-full border border-[var(--brand-border)] bg-white px-2 py-1">
                     {service.modality === "zoom" ? "Videollamada" : service.modality}
                   </span>
                 ) : null}
               </div>
-              <div className="border-t border-[var(--panel-border)] pt-3">
-                <p className="text-xs font-semibold text-[var(--panel-muted)]">Fecha y hora</p>
+              <div className="border-t border-[var(--brand-border)] pt-3">
+                <p className="text-xs font-semibold text-[var(--brand-muted)]">Fecha y hora</p>
                 <div className="mt-1 space-y-1 text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <svg
                       aria-hidden="true"
-                      className="h-4 w-4 text-[var(--panel-muted)]"
+                      className="h-4 w-4 text-[var(--brand-muted)]"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
@@ -382,7 +408,7 @@ export default function PublicBookingPage() {
                   <div className="flex items-center gap-2">
                     <svg
                       aria-hidden="true"
-                      className="h-4 w-4 text-[var(--panel-muted)]"
+                      className="h-4 w-4 text-[var(--brand-muted)]"
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
@@ -405,10 +431,12 @@ export default function PublicBookingPage() {
           {bookingStep === 1 ? (
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <h2 className="text-lg font-semibold">Elige día y hora</h2>
-                <div className="h-2 w-full rounded-full bg-[var(--panel-soft)]">
+                <h2 className="text-xl font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-2xl">
+                  Elige día y hora
+                </h2>
+                <div className="h-2 w-full rounded-full bg-[var(--brand-soft)]">
                   <div
-                    className="h-full rounded-full bg-[var(--page-text)] transition-all"
+                    className="h-full rounded-full bg-[var(--brand-teal)] transition-all"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -416,12 +444,12 @@ export default function PublicBookingPage() {
               <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">
+                    <h2 className="text-lg font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-xl">
                       {capitalizeFirst(monthCursor.toLocaleDateString("es-CL", { month: "long" }))}
                     </h2>
                     <div className="flex items-center gap-2">
                       <button
-                        className="rounded-full border border-[var(--panel-border)] p-1 text-xs"
+                        className="rounded-full border border-[var(--brand-border)] p-1 text-xs text-[var(--brand-copper)] transition hover:text-[var(--brand-teal)]"
                         type="button"
                         aria-label="Mes anterior"
                         onClick={() => setMonthCursor(addMonths(monthCursor, -1))}
@@ -441,7 +469,7 @@ export default function PublicBookingPage() {
                         </svg>
                       </button>
                       <button
-                        className="rounded-full border border-[var(--panel-border)] p-1 text-xs"
+                        className="rounded-full border border-[var(--brand-border)] p-1 text-xs text-[var(--brand-copper)] transition hover:text-[var(--brand-teal)]"
                         type="button"
                         aria-label="Mes siguiente"
                         onClick={() => setMonthCursor(addMonths(monthCursor, 1))}
@@ -461,7 +489,7 @@ export default function PublicBookingPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--panel-muted)]">
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--brand-muted)]">
                     {weekdayLabels.map((label) => (
                       <div key={label}>{label}</div>
                     ))}
@@ -480,10 +508,10 @@ export default function PublicBookingPage() {
                           type="button"
                           className={`rounded-full border px-2 py-2 text-sm transition ${
                             isSelected
-                              ? "border-[var(--page-text)] bg-[var(--page-text)] text-[var(--page-bg)]"
+                              ? "border-[var(--brand-teal)] bg-[var(--brand-teal)] text-black"
                               : hasSlots
-                                ? "border-[var(--panel-border)] bg-[var(--panel-soft)] text-[var(--page-text)] hover:bg-[#dfe7f2]"
-                                : "border-[var(--panel-border)] text-[var(--panel-muted)] hover:bg-[var(--panel-soft)]"
+                                ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-ink)] hover:bg-[var(--brand-border)]"
+                                : "border-[var(--brand-border)] text-[var(--brand-muted)] hover:bg-[var(--brand-paper)]"
                           }`}
                           onClick={() => setSelectedDate(date)}
                         >
@@ -493,9 +521,9 @@ export default function PublicBookingPage() {
                     })}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-soft)] p-3 shadow-sm">
+                <div className="rounded-3xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
                   {slots.length === 0 ? (
-                    <p className="text-sm text-[var(--panel-muted)]">Sin horarios disponibles.</p>
+                    <p className="text-sm text-[var(--brand-muted)]">Sin horarios disponibles.</p>
                   ) : (
                     <>
                       <div className="grid gap-2">
@@ -508,14 +536,14 @@ export default function PublicBookingPage() {
                             >
                               <button
                                 type="button"
-                                className="flex-1 rounded-xl border border-[var(--panel-border)] px-4 py-2 text-left text-sm transition-all duration-300 ease-out"
+                                className="flex-1 rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-sm transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
                                 onClick={() => setSelectedSlot(null)}
                               >
                                 {new Date(slot.start_at).toLocaleString("es-CL", { timeStyle: "short" })}
                               </button>
                               <button
                                 type="button"
-                                className="flex-[1.2] rounded-xl border border-[var(--panel-border)] bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)] transition-all duration-300 ease-out"
+                                className="flex-[1.2] rounded-full bg-[var(--brand-teal)] px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 ease-out"
                                 onClick={() => {
                                   setError(null);
                                   setBookingStep(2);
@@ -528,7 +556,7 @@ export default function PublicBookingPage() {
                             <button
                               key={slot.start_at}
                               type="button"
-                              className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-left text-sm transition-all duration-300 ease-out"
+                              className="rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-sm transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
                               onClick={() => setSelectedSlot(slot)}
                             >
                               {new Date(slot.start_at).toLocaleString("es-CL", { timeStyle: "short" })}
@@ -544,10 +572,12 @@ export default function PublicBookingPage() {
           ) : (
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <h2 className="text-lg font-semibold">Datos personales</h2>
-                <div className="h-2 w-full rounded-full bg-[var(--panel-soft)]">
+                <h2 className="text-xl font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-2xl">
+                  Datos personales
+                </h2>
+                <div className="h-2 w-full rounded-full bg-[var(--brand-soft)]">
                   <div
-                    className="h-full rounded-full bg-[var(--page-text)] transition-all"
+                    className="h-full rounded-full bg-[var(--brand-teal)] transition-all"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -631,10 +661,10 @@ export default function PublicBookingPage() {
                 {bookingStep === 2 ? (
                   <>
                       <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-sm">
+                        <label className="text-base text-[var(--brand-ink)]">
                           <div className="flex items-center gap-2">
                             RUT
-                            <span className="flex items-center gap-1 text-xs text-[var(--panel-muted)]">
+                            <span className="flex items-center gap-1 text-xs text-[var(--brand-muted)]">
                               (
                               <input
                                 type="checkbox"
@@ -651,7 +681,7 @@ export default function PublicBookingPage() {
                             </span>
                           </div>
                           <input
-                            className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                             value={rut}
                             onChange={(event) => setRut(event.target.value)}
                             onBlur={() => {
@@ -663,30 +693,30 @@ export default function PublicBookingPage() {
                             disabled={noRut || patientLoading}
                           />
                         </label>
-                        <label className="text-sm">
+                        <label className="text-base text-[var(--brand-ink)]">
                           Fecha nacimiento
                           <input
-                            className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                             type="date"
                             value={birthDate}
                             onChange={(event) => setBirthDate(event.target.value)}
                             required
                           />
                         </label>
-                        <label className="text-sm">
+                        <label className="text-base text-[var(--brand-ink)]">
                           Nombre
                           <input
-                            className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                             value={firstName}
                             onChange={(event) => setFirstName(event.target.value)}
                             onBlur={() => setFirstName(capitalizeFirst(firstName))}
                             required
                           />
                         </label>
-                        <label className="text-sm">
+                        <label className="text-base text-[var(--brand-ink)]">
                           Apellidos
                           <input
-                            className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                            className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                             value={lastName}
                             onChange={(event) => setLastName(event.target.value)}
                             onBlur={() => setLastName(capitalizeFirst(lastName))}
@@ -696,14 +726,14 @@ export default function PublicBookingPage() {
                       </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
-                        className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
+                        className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                         type="button"
                         onClick={() => setBookingStep(1)}
                       >
                         Volver
                       </button>
                       <button
-                        className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black disabled:cursor-not-allowed disabled:opacity-60"
                         type="button"
                         disabled={!firstName || !lastName || !birthDate || (!noRut && !rut)}
                         onClick={() => {
@@ -728,20 +758,20 @@ export default function PublicBookingPage() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <div className="grid gap-4 md:grid-cols-2">
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Email
                               <input
-                                className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                                className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                                 type="email"
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 required
                               />
                             </label>
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Telefono
                               <input
-                                className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                                className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                                 value={phone}
                                 onChange={(event) => setPhone(event.target.value)}
                                 required
@@ -751,21 +781,21 @@ export default function PublicBookingPage() {
                         </div>
                         <div className="space-y-2">
                           <div className="grid gap-4 md:grid-cols-2">
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Domicilio
                               <input
-                                className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                                className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                                 value={addressLine}
                                 onChange={(event) => setAddressLine(event.target.value)}
                                 required
                               />
                             </label>
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Region
                               <div className="relative" ref={regionRef}>
                                 <button
                                   type="button"
-                                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-[var(--panel-border)] bg-white/90 px-3 py-2 text-left text-sm text-[var(--page-text)]"
+                                  className="mt-2 flex w-full items-center justify-between rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-left text-base text-[var(--brand-ink)]"
                                   onClick={() => {
                                     setRegionOpen((prev) => !prev);
                                     setComunaOpen(false);
@@ -774,7 +804,7 @@ export default function PublicBookingPage() {
                                   <span>{region || "Selecciona"}</span>
                                   <svg
                                     aria-hidden="true"
-                                    className="h-4 w-4 text-[var(--panel-muted)]"
+                                    className="h-4 w-4 text-[var(--brand-muted)]"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -786,12 +816,12 @@ export default function PublicBookingPage() {
                                   </svg>
                                 </button>
                                 {regionOpen && (
-                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-xl border border-[var(--panel-border)] bg-white shadow-lg">
+                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-2xl border border-[var(--brand-border)] bg-white shadow-lg">
                                     {regions.map((item) => (
                                       <button
                                         key={item.code}
                                         type="button"
-                                        className="w-full px-3 py-2 text-left text-sm text-[var(--page-text)] hover:bg-[var(--panel-soft)]"
+                                        className="w-full px-3 py-2 text-left text-base text-[var(--brand-ink)] hover:bg-[var(--brand-soft)]"
                                         onClick={() => {
                                           setRegion(item.name);
                                           setComuna("");
@@ -807,12 +837,12 @@ export default function PublicBookingPage() {
                             </label>
                           </div>
                           <div className="grid gap-4 md:grid-cols-2">
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Comuna
                               <div className="relative" ref={comunaRef}>
                                 <button
                                   type="button"
-                                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-[var(--panel-border)] bg-white/90 px-3 py-2 text-left text-sm text-[var(--page-text)] disabled:opacity-50"
+                                  className="mt-2 flex w-full items-center justify-between rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-left text-base text-[var(--brand-ink)] disabled:opacity-50"
                                   onClick={() => {
                                     if (!region || comunas.length === 0) return;
                                     setComunaOpen((prev) => !prev);
@@ -823,7 +853,7 @@ export default function PublicBookingPage() {
                                   <span>{comuna || "Selecciona"}</span>
                                   <svg
                                     aria-hidden="true"
-                                    className="h-4 w-4 text-[var(--panel-muted)]"
+                                    className="h-4 w-4 text-[var(--brand-muted)]"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -835,12 +865,12 @@ export default function PublicBookingPage() {
                                   </svg>
                                 </button>
                                 {comunaOpen && (
-                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-xl border border-[var(--panel-border)] bg-white shadow-lg">
+                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-2xl border border-[var(--brand-border)] bg-white shadow-lg">
                                     {comunas.map((item) => (
                                       <button
                                         key={item.code}
                                         type="button"
-                                        className="w-full px-3 py-2 text-left text-sm text-[var(--page-text)] hover:bg-[var(--panel-soft)]"
+                                        className="w-full px-3 py-2 text-left text-base text-[var(--brand-ink)] hover:bg-[var(--brand-soft)]"
                                         onClick={() => {
                                           setComuna(item.name);
                                           setComunaOpen(false);
@@ -853,12 +883,12 @@ export default function PublicBookingPage() {
                                 )}
                               </div>
                             </label>
-                            <label className="text-sm">
+                            <label className="text-base text-[var(--brand-ink)]">
                               Previsión
                               <div className="relative" ref={insuranceRef}>
                                 <button
                                   type="button"
-                                  className="mt-2 flex w-full items-center justify-between rounded-xl border border-[var(--panel-border)] bg-white/90 px-3 py-2 text-left text-sm text-[var(--page-text)]"
+                                  className="mt-2 flex w-full items-center justify-between rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-left text-base text-[var(--brand-ink)]"
                                   onClick={() => {
                                     setInsuranceOpen((prev) => !prev);
                                   }}
@@ -869,7 +899,7 @@ export default function PublicBookingPage() {
                                   </span>
                                   <svg
                                     aria-hidden="true"
-                                    className="h-4 w-4 text-[var(--panel-muted)]"
+                                    className="h-4 w-4 text-[var(--brand-muted)]"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -881,12 +911,12 @@ export default function PublicBookingPage() {
                                   </svg>
                                 </button>
                                 {insuranceOpen && (
-                                  <div className="absolute inset-x-0 z-20 mt-1 rounded-xl border border-[var(--panel-border)] bg-white shadow-lg">
+                                  <div className="absolute inset-x-0 z-20 mt-1 rounded-2xl border border-[var(--brand-border)] bg-white shadow-lg">
                                     {insuranceOptions.map((option) => (
                                       <button
                                         key={option.value}
                                         type="button"
-                                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-[var(--page-text)] hover:bg-[var(--panel-soft)]"
+                                        className="flex w-full items-center justify-between px-3 py-2 text-left text-base text-[var(--brand-ink)] hover:bg-[var(--brand-soft)]"
                                         onClick={() => {
                                           setInsurance(option.value);
                                           setInsuranceOpen(false);
@@ -894,7 +924,7 @@ export default function PublicBookingPage() {
                                       >
                                         <span>{option.label}</span>
                                         {insurance === option.value && (
-                                          <span className="text-[var(--page-text)]">✓</span>
+                                          <span className="text-[var(--brand-ink)]">✓</span>
                                         )}
                                       </button>
                                     ))}
@@ -907,16 +937,16 @@ export default function PublicBookingPage() {
                       </div>
                       {bookingStatus ? <p className="text-sm text-emerald-600">{bookingStatus}</p> : null}
                       {geoError ? <p className="text-xs text-amber-500">{geoError}</p> : null}
-                      <div className="flex flex-wrap gap-2 justify-end">
+                      <div className="flex flex-wrap justify-end gap-2">
                         <button
-                          className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
+                          className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                           type="button"
                           onClick={() => setBookingStep(2)}
                         >
                           Volver
                         </button>
                         <button
-                          className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
+                          className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black"
                           type="submit"
                           disabled={isSubmitting}
                           aria-busy={isSubmitting}
