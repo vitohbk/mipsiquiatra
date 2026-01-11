@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --page-bg: #f8fafc;
+  --page-text: #0f172a;
+  --panel-bg: #ffffff;
+  --panel-border: #e2e8f0;
+  --panel-muted: #475569;
+  --panel-soft: #f1f5f9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--page-text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7.41 9.59a1 1 0 0 1 1.41 0L12 12.76l3.18-3.17a1 1 0 1 1 1.41 1.41l-3.88 3.88a1 1 0 0 1-1.41 0L7.41 11a1 1 0 0 1 0-1.41z' fill='%230F0F0F'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1.05rem !important;
+  padding-right: 2.75rem !important;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--panel-bg) !important;
+}
+
+.badge {
+  border: 1px solid #c7dbf6;
+  background: #eff6ff;
+  color: #1d4ed8;
+}

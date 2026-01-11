@@ -1,3 +1,5 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # Logs
 logs
 *.log
@@ -39,6 +41,7 @@ build/Release
 
 # Dependency directories
 node_modules/
+/apps/web/node_modules
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -46,6 +49,7 @@ web_modules/
 
 # TypeScript cache
 *.tsbuildinfo
+/apps/web/tsconfig.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -77,6 +81,7 @@ web_modules/
 # Next.js build output
 .next
 out
+/apps/web/.next/
 
 # Nuxt.js build / generate output
 .nuxt
@@ -125,7 +130,7 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# yarn v3
+# Yarn v3
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -137,3 +142,19 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+next-env.d.ts
