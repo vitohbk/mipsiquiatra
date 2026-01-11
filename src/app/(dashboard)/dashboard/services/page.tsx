@@ -13,7 +13,7 @@ type Membership = {
   role: string;
   secondary_role?: string | null;
   tenants?: { name: string; slug: string } | null;
-  profiles?: { full_name: string | null; email: string | null } | null;
+  profiles?: { full_name: string | null; email: string | null; avatar_url?: string | null } | null;
 };
 
 type Service = {
@@ -117,6 +117,11 @@ export default function ServicesPage() {
     return match?.profiles?.full_name ?? match?.profiles?.email ?? userId;
   };
 
+  const professionalAvatar = (userId: string) => {
+    const match = memberships.find((member) => member.user_id === userId);
+    return match?.profiles?.avatar_url ?? null;
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -133,7 +138,7 @@ export default function ServicesPage() {
       if (userIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("user_id, full_name, email")
+          .select("user_id, full_name, email, avatar_url")
           .in("user_id", userIds);
 
         const profileMap = new Map(
@@ -141,6 +146,7 @@ export default function ServicesPage() {
             user_id: string;
             full_name?: string | null;
             email?: string | null;
+            avatar_url?: string | null;
           }>).map((profile) => [profile.user_id, profile]),
         );
 
@@ -150,6 +156,7 @@ export default function ServicesPage() {
             ? {
                 full_name: profile.full_name ?? null,
                 email: profile.email ?? null,
+                avatar_url: profile.avatar_url ?? null,
               }
             : null;
         });
@@ -245,7 +252,7 @@ export default function ServicesPage() {
       if (userIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("user_id, full_name, email")
+          .select("user_id, full_name, email, avatar_url")
           .in("user_id", userIds);
 
         const profileMap = new Map(
@@ -253,6 +260,7 @@ export default function ServicesPage() {
             user_id: string;
             full_name?: string | null;
             email?: string | null;
+            avatar_url?: string | null;
           }>).map((profile) => [profile.user_id, profile]),
         );
 
@@ -262,6 +270,7 @@ export default function ServicesPage() {
             ? {
                 full_name: profile.full_name ?? null,
                 email: profile.email ?? null,
+                avatar_url: profile.avatar_url ?? null,
               }
             : null;
         });
@@ -889,7 +898,16 @@ export default function ServicesPage() {
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 text-xs text-[var(--panel-muted)]">
-                          <span className="h-7 w-7 shrink-0 rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)]" />
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)]">
+                            {professionalAvatar(service.professional_user_id) ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={professionalAvatar(service.professional_user_id) ?? ""}
+                                alt={professionalLabel(service.professional_user_id)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : null}
+                          </span>
                           <span>{professionalLabel(service.professional_user_id)}</span>
                         </div>
                         <button

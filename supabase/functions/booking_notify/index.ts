@@ -4,6 +4,7 @@ import { createAdminClient } from "../_shared/supabase.ts";
 
 const notifyUrl = Deno.env.get("NOTIFY_WEBHOOK_URL") ?? "";
 const notifySecret = Deno.env.get("NOTIFY_WEBHOOK_SECRET") ?? "";
+const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.mipsiquiatra.cl").replace(/\/$/, "");
 
 type BookingDetails = {
   id: string;
@@ -13,6 +14,32 @@ type BookingDetails = {
   services?: { name: string | null } | null;
   tenants?: { name: string | null; timezone: string | null } | null;
 };
+
+async function hashToken(token: string) {
+  const data = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function createActionToken(admin: ReturnType<typeof createAdminClient>, bookingId: string, action: "cancel" | "reschedule") {
+  const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+  const token = `${crypto.randomUUID()}-${Array.from(randomBytes).map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+  const tokenHash = await hashToken(token);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 72).toISOString();
+
+  const { error } = await admin.from("booking_action_tokens").insert({
+    booking_id: bookingId,
+    action,
+    token_hash: tokenHash,
+    expires_at: expiresAt,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return token;
+}
 
 serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -64,6 +91,8 @@ serve(async (req) => {
     }
 
     const timezone = booking.tenants?.timezone ?? "America/Santiago";
+    const cancelToken = await createActionToken(admin, booking.id, "cancel");
+    const rescheduleToken = await createActionToken(admin, booking.id, "reschedule");
     const notifyResponse = await fetch(notifyUrl, {
       method: "POST",
       headers: {
@@ -78,6 +107,8 @@ serve(async (req) => {
         tenant_name: booking.tenants?.name ?? null,
         start_at: booking.start_at,
         timezone,
+        cancel_url: `${publicSiteUrl}/booking/${cancelToken}/cancelar`,
+        reschedule_url: `${publicSiteUrl}/booking/${rescheduleToken}/reprogramar`,
       }),
     });
 

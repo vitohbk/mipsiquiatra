@@ -6,6 +6,8 @@ export type NotifyPayload = {
   tenant_name?: string | null;
   start_at: string;
   timezone?: string | null;
+  cancel_url?: string | null;
+  reschedule_url?: string | null;
 };
 
 function formatDateTime(value: string, timeZone: string) {
@@ -31,6 +33,29 @@ export function buildBookingEmail(payload: NotifyPayload) {
     payload.type === "reminder"
       ? `Te recordamos tu reserva para ${serviceName}.`
       : `Tu reserva para ${serviceName} quedó confirmada.`;
+
+  const actionButtons = payload.cancel_url || payload.reschedule_url
+    ? `
+        <tr>
+          <td style="padding:8px 34px 20px;font-family:Arial, sans-serif;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                ${payload.reschedule_url ? `
+                  <td style="padding-right:10px;">
+                    <a href="${payload.reschedule_url}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0f766e;color:#ffffff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;">Reprogramar</a>
+                  </td>
+                ` : ""}
+                ${payload.cancel_url ? `
+                  <td>
+                    <a href="${payload.cancel_url}" style="display:inline-block;padding:10px 16px;border-radius:999px;border:1px solid #0f766e;color:#0f766e;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;">Cancelar</a>
+                  </td>
+                ` : ""}
+              </tr>
+            </table>
+          </td>
+        </tr>
+      `
+    : "";
 
   const html = `
     <div style="margin:0;padding:34px;background:#f5f9f8;">
@@ -70,10 +95,13 @@ export function buildBookingEmail(payload: NotifyPayload) {
             </table>
           </td>
         </tr>
+        ${actionButtons}
         <tr>
           <td style="padding:20px 34px 30px;font-family:Arial, sans-serif;color:#475569;">
             <p style="margin:0;">Gracias por confiar en ${tenantName}.</p>
-            <p style="margin:10px 0 0;font-size:12px;color:#0f766e;">Si necesitas reprogramar, responde a este correo.</p>
+            <p style="margin:10px 0 0;font-size:12px;color:#0f766e;">
+              Si necesitas reprogramar o cancelar, puedes usar los botones anteriores.
+            </p>
           </td>
         </tr>
       </table>
