@@ -141,7 +141,7 @@ export default function Home() {
       </header>
 
       <section
-        className="relative flex min-h-[80vh] items-center overflow-hidden text-center"
+        className="relative flex min-h-screen items-center overflow-hidden text-center"
         style={{
           backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${heroImage})`,
           backgroundSize: "cover",
