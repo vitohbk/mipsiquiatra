@@ -545,7 +545,7 @@ export default function PublicBookingPage() {
                               </button>
                               <button
                                 type="button"
-                                className={`overflow-hidden rounded-full bg-[var(--brand-teal)] px-4 py-2 text-base font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 ease-out ${
+                                className={`overflow-hidden rounded-full bg-[var(--brand-teal)] px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 ease-out ${
                                   isSelected
                                     ? "opacity-100 translate-x-0"
                                     : "pointer-events-none opacity-0 translate-x-2"

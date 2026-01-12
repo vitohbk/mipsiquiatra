@@ -157,7 +157,7 @@ export default function Home() {
           </h1>
           <div className="mt-10">
             <a
-              href="#quiensoy"
+              href="https://www.mipsiquiatra.cl/primera-cita/"
               className="inline-flex items-center rounded-full bg-[#39cec9] px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
             >
               Agendar una hora
@@ -417,7 +417,7 @@ export default function Home() {
             ¿Ya quieres comenzar?
           </h2>
           <a
-            href="https://calendly.com/mipsiquiatra/primera-cita-dra-mariela-yanez"
+            href="https://www.mipsiquiatra.cl/primera-cita/"
             className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#39cec9] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
           >
             Agendar una hora
