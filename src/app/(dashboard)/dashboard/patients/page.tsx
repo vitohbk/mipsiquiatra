@@ -614,7 +614,6 @@ export default function PatientsPage() {
                   type="date"
                   value={birthDate}
                   onChange={(event) => setBirthDate(event.target.value)}
-                  required
                 />
               </label>
               <label className="text-sm">
@@ -639,24 +638,22 @@ export default function PatientsPage() {
               <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
                 <label className="text-sm">
                   Domicilio
-                  <input
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    value={addressLine}
-                    onChange={(event) => setAddressLine(event.target.value)}
-                    required
-                  />
-                </label>
-                <label className="text-sm">
-                  Region
-                  <select
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    value={region}
-                    onChange={(event) => {
-                      setRegion(event.target.value);
-                      setComuna("");
-                    }}
-                    required
-                  >
+                <input
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  value={addressLine}
+                  onChange={(event) => setAddressLine(event.target.value)}
+                />
+              </label>
+              <label className="text-sm">
+                Region
+                <select
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  value={region}
+                  onChange={(event) => {
+                    setRegion(event.target.value);
+                    setComuna("");
+                  }}
+                >
                     <option value="">Selecciona</option>
                     {regions.map((item) => (
                       <option key={item.code} value={item.name}>
@@ -672,7 +669,6 @@ export default function PatientsPage() {
                   className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
                   value={comuna}
                   onChange={(event) => setComuna(event.target.value)}
-                  required
                   disabled={!region || comunas.length === 0}
                 >
                   <option value="">{region ? "Selecciona" : "Selecciona region"}</option>
