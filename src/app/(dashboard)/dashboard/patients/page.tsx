@@ -214,6 +214,7 @@ export default function PatientsPage() {
       .eq("tenant_id", activeTenantId as string)
       .order("created_at", { ascending: false });
     setPatients((data ?? []) as Patient[]);
+    router.replace("/dashboard/patients");
   };
 
   const handleEdit = (patient: Patient) => {
@@ -248,7 +249,7 @@ export default function PatientsPage() {
         first_name: capitalizeFirst(editFirstName),
         last_name: capitalizeFirst(editLastName),
         rut: editNoRut ? null : normalizedRut,
-        birth_date: editBirthDate,
+        birth_date: editBirthDate || null,
         email: editEmail,
         phone: editPhone,
         address_line: editAddressLine,
@@ -693,6 +694,7 @@ export default function PatientsPage() {
                   ))}
                 </select>
               </label>
+              {error ? <p className="text-xs text-red-400 md:col-span-2">{error}</p> : null}
               {geoError ? <p className="text-xs text-amber-500 md:col-span-2">{geoError}</p> : null}
               <div className="flex items-center justify-between md:col-span-2">
                 <p className="text-xs text-[var(--panel-muted)]">
