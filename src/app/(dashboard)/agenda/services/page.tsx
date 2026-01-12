@@ -465,7 +465,7 @@ export default function ServicesPage() {
       .eq("tenant_id", activeTenantId as string)
       .order("created_at", { ascending: false });
     setServices((data ?? []) as Service[]);
-    router.replace("/dashboard/services");
+    router.replace("/agenda/services");
   };
 
   const handleEditService = async (service: Service) => {
@@ -1287,7 +1287,7 @@ export default function ServicesPage() {
       {searchParams.get("create") === "1" ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => router.replace("/dashboard/services")}
+          onClick={() => router.replace("/agenda/services")}
           role="presentation"
         >
           <div
@@ -1299,7 +1299,7 @@ export default function ServicesPage() {
               <button
                 className="text-sm text-[var(--panel-muted)]"
                 type="button"
-                onClick={() => router.replace("/dashboard/services")}
+                onClick={() => router.replace("/agenda/services")}
               >
                 Cerrar
               </button>
@@ -1604,7 +1604,7 @@ export default function ServicesPage() {
                 <button
                   className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
                   type="button"
-                  onClick={() => router.replace("/dashboard/services")}
+                  onClick={() => router.replace("/agenda/services")}
                 >
                   Cancelar
                 </button>

@@ -214,7 +214,7 @@ export default function PatientsPage() {
       .eq("tenant_id", activeTenantId as string)
       .order("created_at", { ascending: false });
     setPatients((data ?? []) as Patient[]);
-    router.replace("/dashboard/patients");
+    router.replace("/agenda/patients");
   };
 
   const handleEdit = (patient: Patient) => {
@@ -542,7 +542,7 @@ export default function PatientsPage() {
       {searchParams.get("create") === "1" ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => router.replace("/dashboard/patients")}
+          onClick={() => router.replace("/agenda/patients")}
           role="presentation"
         >
           <div
@@ -554,7 +554,7 @@ export default function PatientsPage() {
               <button
                 className="text-sm text-[var(--panel-muted)]"
                 type="button"
-                onClick={() => router.replace("/dashboard/patients")}
+                onClick={() => router.replace("/agenda/patients")}
               >
                 Cerrar
               </button>
@@ -700,7 +700,7 @@ export default function PatientsPage() {
                   <button
                     className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
                     type="button"
-                    onClick={() => router.replace("/dashboard/patients")}
+                    onClick={() => router.replace("/agenda/patients")}
                   >
                     Cancelar
                   </button>

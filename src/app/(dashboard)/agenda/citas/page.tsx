@@ -415,7 +415,7 @@ export default function BookingsPage() {
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
-    if (!window.confirm("Eliminar esta reserva?")) return;
+    if (!window.confirm("Eliminar esta cita?")) return;
     setError(null);
     const { error: deleteError } = await supabase.from("bookings").delete().eq("id", bookingId);
     if (deleteError) {
@@ -426,7 +426,7 @@ export default function BookingsPage() {
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    if (!window.confirm("Cancelar esta reserva?")) return;
+    if (!window.confirm("Cancelar esta cita?")) return;
     setError(null);
     setSavingEdit(true);
     const { error: cancelError } = await (supabase.from("bookings") as any)
@@ -449,15 +449,15 @@ export default function BookingsPage() {
   return (
     <section className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold md:text-2xl">Reservas</h1>
-        <p className="text-sm text-[var(--panel-muted)]">Listado de reservas.</p>
+        <h1 className="text-xl font-semibold md:text-2xl">Citas</h1>
+        <p className="text-sm text-[var(--panel-muted)]">Listado de citas.</p>
       </div>
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       <div className="space-y-3">
         {bookings.length === 0 ? (
-          <p className="text-sm text-[var(--panel-muted)]">Sin reservas aun.</p>
+          <p className="text-sm text-[var(--panel-muted)]">Sin citas aun.</p>
         ) : (
           <div className="space-y-3">
             {Array.from(groupedBookings.entries())
@@ -517,7 +517,7 @@ export default function BookingsPage() {
                           <button
                             className="rounded-full border border-[var(--panel-border)] p-2 text-[var(--panel-muted)] hover:text-[var(--page-text)]"
                             type="button"
-                            aria-label="Eliminar reserva"
+                            aria-label="Eliminar cita"
                             onClick={() => handleDeleteBooking(booking.id)}
                           >
                             <svg
@@ -703,7 +703,7 @@ export default function BookingsPage() {
       {searchParams.get("create") === "1" ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => router.replace("/dashboard/bookings")}
+          onClick={() => router.replace("/agenda/citas")}
           role="presentation"
         >
           <div
@@ -711,11 +711,11 @@ export default function BookingsPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Nueva reserva</h2>
+              <h2 className="text-lg font-semibold">Nueva cita</h2>
               <button
                 className="text-sm text-[var(--panel-muted)]"
                 type="button"
-                onClick={() => router.replace("/dashboard/bookings")}
+                onClick={() => router.replace("/agenda/citas")}
               >
                 Cerrar
               </button>
@@ -785,7 +785,7 @@ export default function BookingsPage() {
                   ...current,
                 ]);
                 setCreatePatientQuery("");
-                router.replace("/dashboard/bookings");
+                router.replace("/agenda/citas");
               }}
             >
               <label className="text-base">
@@ -892,7 +892,7 @@ export default function BookingsPage() {
                 <button
                   className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
                   type="button"
-                  onClick={() => router.replace("/dashboard/bookings")}
+                  onClick={() => router.replace("/agenda/citas")}
                 >
                   Cancelar
                 </button>
@@ -901,7 +901,7 @@ export default function BookingsPage() {
                   type="submit"
                   disabled={createAvailabilityLoading || createAvailableSlots.length === 0}
                 >
-                  Crear reserva
+                  Crear cita
                 </button>
               </div>
             </form>

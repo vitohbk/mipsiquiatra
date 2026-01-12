@@ -6,7 +6,7 @@ export default function DemoPage() {
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <h1 className="text-3xl font-semibold">Booking demo</h1>
         <p className="text-[var(--panel-muted)]">
-          Visita /&lt;slug&gt; con el slug de un booking link creado en el dashboard.
+          Visita /&lt;slug&gt; con el slug de un booking link creado en la agenda.
         </p>
         <Link className="text-sm text-[var(--panel-muted)]" href="/">
           ← Volver

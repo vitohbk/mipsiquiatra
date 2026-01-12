@@ -37,7 +37,7 @@ export default function DashboardHeader() {
         <h1 className="text-xl font-[var(--font-playfair)] text-[var(--brand-ink)]">{tenantName}</h1>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {pathname === "/dashboard/patients" && (
+        {pathname === "/agenda/patients" && (
           <label className="text-sm text-[var(--brand-ink)]">
             Buscar paciente
             <input
@@ -51,40 +51,40 @@ export default function DashboardHeader() {
                 } else {
                   next.delete("q");
                 }
-                router.replace(`/dashboard/patients?${next.toString()}`);
+                router.replace(`/agenda/patients?${next.toString()}`);
               }}
               placeholder="Nombre, RUT, email"
             />
           </label>
         )}
-        {(pathname === "/dashboard/services") && (
+        {(pathname === "/agenda/services") && (
           <Link
             className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
-            href="/dashboard/services?create=1"
+            href="/agenda/services?create=1"
           >
             Nuevo servicio
           </Link>
         )}
-        {(pathname === "/dashboard/bookings" || pathname === "/dashboard") && (
+        {(pathname === "/agenda/citas" || pathname === "/agenda") && (
           <Link
             className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
-            href="/dashboard/bookings?create=1"
+            href="/agenda/citas?create=1"
           >
-            Nueva reserva
+            Nueva cita
           </Link>
         )}
-        {pathname === "/dashboard/patients" && (
+        {pathname === "/agenda/patients" && (
           <Link
             className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
-            href="/dashboard/patients?create=1"
+            href="/agenda/patients?create=1"
           >
             Nuevo paciente
           </Link>
         )}
-        {pathname === "/dashboard/users" && (
+        {pathname === "/agenda/users" && (
           <Link
             className="rounded-full bg-[var(--page-text)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--page-bg)]"
-            href="/dashboard/users?create=1"
+            href="/agenda/users?create=1"
           >
             Nuevo usuario
           </Link>

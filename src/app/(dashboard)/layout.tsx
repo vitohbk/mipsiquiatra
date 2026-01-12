@@ -34,12 +34,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-[240px_1fr] gap-6 px-6 py-6">
           <aside className="flex flex-col gap-6 rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
             <nav className="flex flex-col gap-2 text-sm uppercase tracking-[0.2em]">
-              {navItem("/dashboard/bookings", "Reservas")}
-              {navItem("/dashboard/services", "Servicios")}
-              {navItem("/dashboard/availability", "Disponibilidad")}
-              {navItem("/dashboard/patients", "Pacientes")}
-              {navItem("/dashboard/users", "Usuarios")}
-              {navItem("/dashboard/settings", "Opciones")}
+              {navItem("/agenda/citas", "Citas")}
+              {navItem("/agenda/services", "Servicios")}
+              {navItem("/agenda/availability", "Disponibilidad")}
+              {navItem("/agenda/patients", "Pacientes")}
+              {navItem("/agenda/users", "Usuarios")}
+              {navItem("/agenda/options", "Opciones")}
             </nav>
             <div className="mt-auto">
               <AuthActions />

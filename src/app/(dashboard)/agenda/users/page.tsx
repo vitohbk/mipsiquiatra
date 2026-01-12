@@ -876,7 +876,7 @@ export default function UsersPage() {
       {searchParams.get("create") === "1" ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => router.replace("/dashboard/users")}
+          onClick={() => router.replace("/agenda/users")}
           role="presentation"
         >
           <div
@@ -888,7 +888,7 @@ export default function UsersPage() {
               <button
                 className="text-sm text-[var(--panel-muted)]"
                 type="button"
-                onClick={() => router.replace("/dashboard/users")}
+                onClick={() => router.replace("/agenda/users")}
               >
                 Cerrar
               </button>
@@ -1020,7 +1020,7 @@ export default function UsersPage() {
                   setInviteTab("details");
                   setInviteRulesDraft([]);
                   setInviteExceptionsDraft([]);
-                  router.replace("/dashboard/users");
+                  router.replace("/agenda/users");
                 } catch (inviteError) {
                   setError(inviteError instanceof Error ? inviteError.message : "Error creando usuario");
                 }
@@ -1249,7 +1249,7 @@ export default function UsersPage() {
                 <button
                   className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
                   type="button"
-                  onClick={() => router.replace("/dashboard/users")}
+                  onClick={() => router.replace("/agenda/users")}
                 >
                   Cancelar
                 </button>

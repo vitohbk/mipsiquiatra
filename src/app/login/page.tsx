@@ -29,7 +29,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/dashboard");
+    router.replace("/agenda");
   };
 
   return (
@@ -39,7 +39,7 @@ export default function LoginPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--panel-muted)]">
             Mipsiquiatra
           </p>
-          <h1 className="text-3xl font-semibold">Ingresa al dashboard</h1>
+          <h1 className="text-3xl font-semibold">Ingresa a la agenda</h1>
         </div>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block text-sm">
