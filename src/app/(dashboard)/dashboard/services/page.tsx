@@ -168,9 +168,10 @@ export default function ServicesPage() {
         setActiveTenantId(normalized[0].tenant_id);
       }
       if (!serviceProfessionalId && normalized.length > 0) {
-        const firstProfessional = normalized.find((member) =>
-          ["professional", "admin"].includes(member.role) ||
-          (member.secondary_role && ["professional", "admin"].includes(member.secondary_role)),
+        const firstProfessional = normalized.find(
+          (member) =>
+            member.role === "professional" ||
+            (member.secondary_role && member.secondary_role === "professional"),
         );
         if (firstProfessional) {
           setServiceProfessionalId(firstProfessional.user_id ?? "");
@@ -990,17 +991,17 @@ export default function ServicesPage() {
                       required
                     >
                       <option value="">Selecciona</option>
-                      {memberships
-                        .filter(
-                          (member) =>
-                            ["professional", "admin"].includes(member.role) ||
-                            (member.secondary_role && ["professional", "admin"].includes(member.secondary_role)),
-                        )
-                        .map((member) => (
-                          <option key={member.user_id} value={member.user_id}>
-                            {member.profiles?.full_name ?? member.profiles?.email ?? member.user_id}
-                          </option>
-                        ))}
+                        {memberships
+                          .filter(
+                            (member) =>
+                              member.role === "professional" ||
+                              (member.secondary_role && member.secondary_role === "professional"),
+                          )
+                          .map((member) => (
+                            <option key={member.user_id} value={member.user_id}>
+                              {member.profiles?.full_name ?? member.profiles?.email ?? member.user_id}
+                            </option>
+                          ))}
                     </select>
                   </label>
                   <label className="text-sm md:col-span-2">
@@ -1338,17 +1339,17 @@ export default function ServicesPage() {
                       required
                     >
                       <option value="">Selecciona</option>
-                      {memberships
-                        .filter(
-                          (member) =>
-                            ["professional", "admin"].includes(member.role) ||
-                            (member.secondary_role && ["professional", "admin"].includes(member.secondary_role)),
-                        )
-                        .map((member) => (
-                          <option key={member.user_id} value={member.user_id}>
-                            {member.profiles?.full_name ?? member.profiles?.email ?? member.user_id}
-                          </option>
-                        ))}
+                        {memberships
+                          .filter(
+                            (member) =>
+                              member.role === "professional" ||
+                              (member.secondary_role && member.secondary_role === "professional"),
+                          )
+                          .map((member) => (
+                            <option key={member.user_id} value={member.user_id}>
+                              {member.profiles?.full_name ?? member.profiles?.email ?? member.user_id}
+                            </option>
+                          ))}
                     </select>
                   </label>
                   <label className="text-sm md:col-span-2">

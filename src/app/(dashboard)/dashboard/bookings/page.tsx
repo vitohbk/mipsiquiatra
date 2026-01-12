@@ -65,6 +65,9 @@ export default function BookingsPage() {
   const [createProfessionalId, setCreateProfessionalId] = useState("");
   const [createDate, setCreateDate] = useState("");
   const [createTime, setCreateTime] = useState("");
+  const [createAvailableSlots, setCreateAvailableSlots] = useState<Slot[]>([]);
+  const [createAvailabilityLoading, setCreateAvailabilityLoading] = useState(false);
+  const [createAvailabilityLink, setCreateAvailabilityLink] = useState<BookingLink | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -129,8 +132,8 @@ export default function BookingsPage() {
         secondary_role?: string | null;
       }>).filter(
         (member) =>
-          ["admin", "professional"].includes(member.role) ||
-          (member.secondary_role && ["admin", "professional"].includes(member.secondary_role)),
+          member.role === "professional" ||
+          (member.secondary_role && member.secondary_role === "professional"),
       );
       if (eligibleMembers.length > 0) {
         const memberIds = eligibleMembers.map((member) => member.user_id);
@@ -176,6 +179,42 @@ export default function BookingsPage() {
     }
   }, [professionals, createProfessionalId]);
 
+  useEffect(() => {
+    const loadCreateLink = async () => {
+      if (!activeTenantId || !createServiceId || !createProfessionalId) {
+        setCreateAvailabilityLink(null);
+        setCreateAvailableSlots([]);
+        return;
+      }
+      const { data: linkData, error: linkError } = await supabase
+        .from("public_booking_links")
+        .select("slug, public_token")
+        .eq("tenant_id", activeTenantId)
+        .eq("service_id", createServiceId)
+        .eq("professional_user_id", createProfessionalId)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle<BookingLink>();
+
+      if (linkError || !linkData) {
+        setCreateAvailabilityLink(null);
+        setCreateAvailableSlots([]);
+        return;
+      }
+
+      const nextLink: BookingLink = {
+        slug: linkData.slug ?? null,
+        public_token: linkData.public_token ?? null,
+      };
+      setCreateAvailabilityLink(nextLink);
+      if (createDate) {
+        await loadCreateAvailability(nextLink, createDate);
+      }
+    };
+
+    loadCreateLink();
+  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase]);
+
   const professionalLabel = (userId?: string | null) => {
     if (!userId) return "Sin profesional";
     const match = professionals.find((member) => member.user_id === userId);
@@ -216,10 +255,12 @@ export default function BookingsPage() {
   const loadAvailability = async (
     link: { slug: string | null; public_token: string | null },
     dateStr: string,
+    onSlots?: (slots: Slot[]) => void,
   ) => {
     if (!link.slug && !link.public_token) {
       setAvailableSlots([]);
       setEditTime("");
+      onSlots?.([]);
       return;
     }
     setAvailabilityLoading(true);
@@ -236,6 +277,7 @@ export default function BookingsPage() {
       );
       const slots = availability.slots ?? [];
       setAvailableSlots(slots);
+      onSlots?.(slots);
       if (slots.length > 0) {
         const current = slots.find((slot) => toLocalTimeInput(slot.start_at) === editTime);
         if (!current) {
@@ -248,8 +290,41 @@ export default function BookingsPage() {
       setError(loadError instanceof Error ? loadError.message : "No se pudo cargar disponibilidad.");
       setAvailableSlots([]);
       setEditTime("");
+      onSlots?.([]);
     } finally {
       setAvailabilityLoading(false);
+    }
+  };
+
+  const loadCreateAvailability = async (link: BookingLink, dateStr: string) => {
+    setCreateAvailabilityLoading(true);
+    try {
+      const availability = await callEdgeFunction<{ slots: Slot[] }>(
+        "public_availability",
+        {
+          slug: link.slug ?? undefined,
+          public_token: link.public_token ?? undefined,
+          start_date: dateStr,
+          end_date: dateStr,
+        },
+        { disableAuth: true },
+      );
+      const slots = availability.slots ?? [];
+      setCreateAvailableSlots(slots);
+      if (slots.length > 0) {
+        const current = slots.find((slot) => toLocalTimeInput(slot.start_at) === createTime);
+        if (!current) {
+          setCreateTime(toLocalTimeInput(slots[0].start_at));
+        }
+      } else {
+        setCreateTime("");
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "No se pudo cargar disponibilidad.");
+      setCreateAvailableSlots([]);
+      setCreateTime("");
+    } finally {
+      setCreateAvailabilityLoading(false);
     }
   };
 
@@ -577,27 +652,14 @@ export default function BookingsPage() {
                   return;
                 }
 
-                const startAt = new Date(`${createDate}T${createTime}:00`);
-                const endAt = new Date(startAt.getTime() + service.duration_minutes * 60000);
-
-                if (createProfessionalId) {
-                  const { data: overlap, error: overlapError } = await supabase
-                    .from("bookings")
-                    .select("id")
-                    .eq("professional_user_id", createProfessionalId)
-                    .eq("status", "confirmed")
-                    .lt("start_at", endAt.toISOString())
-                    .gt("end_at", startAt.toISOString())
-                    .limit(1);
-
-                  if (overlapError) {
-                    setError(overlapError.message);
-                    return;
-                  }
-                  if (overlap && overlap.length > 0) {
-                    setError("El profesional ya tiene una reserva en ese horario.");
-                    return;
-                  }
+                const match = createAvailableSlots.find(
+                  (slot) =>
+                    toLocalDateInput(slot.start_at) === createDate &&
+                    toLocalTimeInput(slot.start_at) === createTime,
+                );
+                if (!match) {
+                  setError("Selecciona un horario disponible.");
+                  return;
                 }
 
                 const { data: insertedBooking, error: insertError } = await (supabase
@@ -609,8 +671,8 @@ export default function BookingsPage() {
                   patient_id: patient.id,
                   customer_name: `${patient.first_name} ${patient.last_name}`,
                   customer_email: patient.email,
-                  start_at: startAt.toISOString(),
-                  end_at: endAt.toISOString(),
+                  start_at: match.start_at,
+                  end_at: match.end_at,
                   status: "confirmed",
                   })
                   .select("id")
@@ -626,8 +688,8 @@ export default function BookingsPage() {
                     id: insertedBooking?.id ?? crypto.randomUUID(),
                     customer_name: `${patient.first_name} ${patient.last_name}`,
                     customer_email: patient.email ?? "",
-                    start_at: startAt.toISOString(),
-                    end_at: endAt.toISOString(),
+                    start_at: match.start_at,
+                    end_at: match.end_at,
                     status: "confirmed",
                     professional_user_id: createProfessionalId || null,
                     service_id: service.id,
@@ -693,19 +755,42 @@ export default function BookingsPage() {
                     className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
                     type="date"
                     value={createDate}
-                    onChange={(event) => setCreateDate(event.target.value)}
+                    onChange={(event) => {
+                      const nextDate = event.target.value;
+                      setCreateDate(nextDate);
+                      if (nextDate && createAvailabilityLink) {
+                        loadCreateAvailability(createAvailabilityLink, nextDate);
+                      }
+                    }}
                     required
                   />
                 </label>
                 <label className="text-base">
-                  Hora
-                  <input
+                  Hora disponible
+                  <select
                     className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
-                    type="time"
                     value={createTime}
                     onChange={(event) => setCreateTime(event.target.value)}
                     required
-                  />
+                    disabled={createAvailabilityLoading || createAvailableSlots.length === 0}
+                  >
+                    <option value="">
+                      {createAvailabilityLoading
+                        ? "Cargando..."
+                        : createAvailableSlots.length === 0
+                        ? "Sin horarios disponibles"
+                        : "Selecciona"}
+                    </option>
+                    {createAvailableSlots.map((slot) => {
+                      if (toLocalDateInput(slot.start_at) !== createDate) return null;
+                      const label = toLocalTimeInput(slot.start_at);
+                      return (
+                        <option key={`${slot.start_at}-${slot.end_at}`} value={label}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </label>
               </div>
               {error ? <p className="text-sm text-red-400">{error}</p> : null}
@@ -720,6 +805,7 @@ export default function BookingsPage() {
                 <button
                   className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
                   type="submit"
+                  disabled={createAvailabilityLoading || createAvailableSlots.length === 0}
                 >
                   Crear reserva
                 </button>
