@@ -409,36 +409,11 @@ export default function PatientsPage() {
                   />
                 </label>
                 <label className="text-sm">
-                  RUT
+                  Telefono
                   <input
                     className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    value={editRut}
-                    onChange={(event) => setEditRut(event.target.value)}
-                    onBlur={() => setEditRut(formatRut(editRut))}
-                    required
-                    disabled={editNoRut}
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-[var(--panel-muted)]">
-                  <input
-                    type="checkbox"
-                    checked={editNoRut}
-                    onChange={(event) => {
-                      setEditNoRut(event.target.checked);
-                      if (event.target.checked) {
-                        setEditRut("");
-                      }
-                    }}
-                  />
-                  Sin RUT
-                </label>
-                <label className="text-sm">
-                  Fecha nacimiento
-                  <input
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    type="date"
-                    value={editBirthDate}
-                    onChange={(event) => setEditBirthDate(event.target.value)}
+                    value={editPhone}
+                    onChange={(event) => setEditPhone(event.target.value)}
                     required
                   />
                 </label>
@@ -452,12 +427,36 @@ export default function PatientsPage() {
                   />
                 </label>
                 <label className="text-sm">
-                  Telefono
+                  RUT
                   <input
                     className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    value={editPhone}
-                    onChange={(event) => setEditPhone(event.target.value)}
-                    required
+                    value={editRut}
+                    onChange={(event) => setEditRut(event.target.value)}
+                    onBlur={() => setEditRut(formatRut(editRut))}
+                    required={!editNoRut}
+                    disabled={editNoRut}
+                  />
+                </label>
+                <div className="flex items-center gap-2 text-sm text-[var(--panel-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={editNoRut}
+                    onChange={(event) => {
+                      setEditNoRut(event.target.checked);
+                      if (event.target.checked) {
+                        setEditRut("");
+                      }
+                    }}
+                  />
+                  <span>Sin RUT</span>
+                </div>
+                <label className="text-sm">
+                  Fecha nacimiento
+                  <input
+                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                    type="date"
+                    value={editBirthDate}
+                    onChange={(event) => setEditBirthDate(event.target.value)}
                   />
                 </label>
               </div>
@@ -468,7 +467,6 @@ export default function PatientsPage() {
                     className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
                     value={editAddressLine}
                     onChange={(event) => setEditAddressLine(event.target.value)}
-                    required
                   />
                 </label>
                 <label className="text-sm">
@@ -480,7 +478,6 @@ export default function PatientsPage() {
                       setEditRegion(event.target.value);
                       setEditComuna("");
                     }}
-                    required
                   >
                     <option value="">Selecciona</option>
                     {regions.map((item) => (
@@ -494,13 +491,12 @@ export default function PatientsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm">
                   Comuna
-                  <select
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                    value={editComuna}
-                    onChange={(event) => setEditComuna(event.target.value)}
-                    required
-                    disabled={!editRegion || editComunas.length === 0}
-                  >
+                <select
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  value={editComuna}
+                  onChange={(event) => setEditComuna(event.target.value)}
+                  disabled={!editRegion || editComunas.length === 0}
+                >
                     <option value="">{editRegion ? "Selecciona" : "Selecciona region"}</option>
                     {editComunas.map((item) => (
                       <option key={item.code} value={item.name}>
@@ -585,36 +581,12 @@ export default function PatientsPage() {
                 />
               </label>
               <label className="text-sm">
-                RUT
+                Telefono
                 <input
                   className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                  value={rut}
-                  onChange={(event) => setRut(event.target.value)}
-                  onBlur={() => setRut(formatRut(rut))}
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
                   required
-                  disabled={noRut}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm text-[var(--panel-muted)] md:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={noRut}
-                  onChange={(event) => {
-                    setNoRut(event.target.checked);
-                    if (event.target.checked) {
-                      setRut("");
-                    }
-                  }}
-                />
-                Sin RUT
-              </label>
-              <label className="text-sm">
-                Fecha de nacimiento
-                <input
-                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                  type="date"
-                  value={birthDate}
-                  onChange={(event) => setBirthDate(event.target.value)}
                 />
               </label>
               <label className="text-sm">
@@ -628,12 +600,36 @@ export default function PatientsPage() {
                 />
               </label>
               <label className="text-sm">
-                Telefono
+                RUT
                 <input
                   className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  required
+                  value={rut}
+                  onChange={(event) => setRut(event.target.value)}
+                  onBlur={() => setRut(formatRut(rut))}
+                  required={!noRut}
+                  disabled={noRut}
+                />
+              </label>
+              <div className="flex items-center gap-2 text-sm text-[var(--panel-muted)] md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={noRut}
+                  onChange={(event) => {
+                    setNoRut(event.target.checked);
+                    if (event.target.checked) {
+                      setRut("");
+                    }
+                  }}
+                />
+                <span>Sin RUT</span>
+              </div>
+              <label className="text-sm">
+                Fecha de nacimiento
+                <input
+                  className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-sm"
+                  type="date"
+                  value={birthDate}
+                  onChange={(event) => setBirthDate(event.target.value)}
                 />
               </label>
               <div className="grid gap-4 md:col-span-2 md:grid-cols-2">

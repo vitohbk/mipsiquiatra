@@ -24,6 +24,7 @@ type Service = {
   id: string;
   name: string;
   duration_minutes: number;
+  slug?: string | null;
 };
 
 type Patient = {
@@ -62,6 +63,7 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [createServiceId, setCreateServiceId] = useState("");
   const [createPatientId, setCreatePatientId] = useState("");
+  const [createPatientQuery, setCreatePatientQuery] = useState("");
   const [createProfessionalId, setCreateProfessionalId] = useState("");
   const [createDate, setCreateDate] = useState("");
   const [createTime, setCreateTime] = useState("");
@@ -69,6 +71,8 @@ export default function BookingsPage() {
   const [createAvailabilityLoading, setCreateAvailabilityLoading] = useState(false);
   const [createAvailabilityLink, setCreateAvailabilityLink] = useState<BookingLink | null>(null);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+  const [editPatientId, setEditPatientId] = useState("");
+  const [editPatientQuery, setEditPatientQuery] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -98,7 +102,7 @@ export default function BookingsPage() {
 
       const { data: serviceData } = await supabase
         .from("services")
-        .select("id, name, duration_minutes")
+        .select("id, name, duration_minutes, slug")
         .eq("tenant_id", activeTenantId);
 
       const { data: patientData } = await supabase
@@ -196,16 +200,43 @@ export default function BookingsPage() {
         .limit(1)
         .maybeSingle<BookingLink>();
 
+      let nextLink: BookingLink | null = null;
       if (linkError || !linkData) {
-        setCreateAvailabilityLink(null);
-        setCreateAvailableSlots([]);
-        return;
+        const service = services.find((item) => item.id === createServiceId);
+        if (!service?.slug) {
+          setCreateAvailabilityLink(null);
+          setCreateAvailableSlots([]);
+          return;
+        }
+        const { data: createdLink, error: createLinkError } = await (supabase
+          .from("public_booking_links") as any)
+          .insert({
+            tenant_id: activeTenantId,
+            service_id: createServiceId,
+            professional_user_id: createProfessionalId,
+            slug: service.slug,
+            public_token: crypto.randomUUID(),
+            is_active: true,
+          })
+          .select("slug, public_token")
+          .single();
+
+        if (createLinkError || !createdLink) {
+          setCreateAvailabilityLink(null);
+          setCreateAvailableSlots([]);
+          return;
+        }
+        nextLink = {
+          slug: createdLink.slug ?? null,
+          public_token: createdLink.public_token ?? null,
+        };
+      } else {
+        nextLink = {
+          slug: linkData.slug ?? null,
+          public_token: linkData.public_token ?? null,
+        };
       }
 
-      const nextLink: BookingLink = {
-        slug: linkData.slug ?? null,
-        public_token: linkData.public_token ?? null,
-      };
       setCreateAvailabilityLink(nextLink);
       if (createDate) {
         await loadCreateAvailability(nextLink, createDate);
@@ -221,6 +252,15 @@ export default function BookingsPage() {
     return match?.profiles?.full_name ?? match?.profiles?.email ?? "Sin profesional";
   };
 
+  const patientLabel = (patient: Patient) =>
+    `${patient.first_name} ${patient.last_name}${patient.email ? ` · ${patient.email}` : ""}`.trim();
+
+  const resolvePatientId = (query: string) => {
+    if (!query) return "";
+    const match = patients.find((patient) => patientLabel(patient) === query);
+    return match?.id ?? "";
+  };
+
   const formatDateLabel = (value: string) => {
     const date = new Date(value);
     const weekday = date.toLocaleDateString("es-CL", { weekday: "long" });
@@ -230,12 +270,12 @@ export default function BookingsPage() {
   };
 
   const groupedBookings = bookings.reduce((acc, booking) => {
-    const label = formatDateLabel(booking.start_at);
-    const existing = acc.get(label);
+    const dateKey = booking.start_at.slice(0, 10);
+    const existing = acc.get(dateKey);
     if (existing) {
       existing.push(booking);
     } else {
-      acc.set(label, [booking]);
+      acc.set(dateKey, [booking]);
     }
     return acc;
   }, new Map<string, Booking[]>());
@@ -330,6 +370,9 @@ export default function BookingsPage() {
 
   const openReschedule = async (booking: Booking) => {
     setEditingBookingId(booking.id);
+    setEditPatientId(booking.patient_id ?? "");
+    const patient = patients.find((item) => item.id === booking.patient_id);
+    setEditPatientQuery(patient ? patientLabel(patient) : booking.customer_name ?? "");
     const start = new Date(booking.start_at);
     const localDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000);
     const [datePart, timePart] = localDate.toISOString().split("T");
@@ -417,11 +460,18 @@ export default function BookingsPage() {
           <p className="text-sm text-[var(--panel-muted)]">Sin reservas aun.</p>
         ) : (
           <div className="space-y-3">
-            {Array.from(groupedBookings.entries()).map(([label, items]) => (
-              <div key={label} className="space-y-3">
-                <h3 className="text-base font-semibold">{label}</h3>
+            {Array.from(groupedBookings.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([dateKey, items]) => (
+              <div key={dateKey} className="space-y-3">
+                <h3 className="text-base font-semibold">{formatDateLabel(dateKey)}</h3>
                 <div className="space-y-3">
-                  {items.map((booking) => (
+                  {items
+                    .sort(
+                      (a, b) =>
+                        new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+                    )
+                    .map((booking) => (
                     <div key={booking.id} className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-base">
                         <div className="flex items-center gap-4">
@@ -496,6 +546,13 @@ export default function BookingsPage() {
                               return;
                             }
 
+                            const patient = patients.find((item) => item.id === editPatientId);
+                            if (!patient) {
+                              setError("Selecciona un paciente.");
+                              setSavingEdit(false);
+                              return;
+                            }
+
                             const match = availableSlots.find(
                               (slot) =>
                                 toLocalDateInput(slot.start_at) === editDate &&
@@ -509,6 +566,9 @@ export default function BookingsPage() {
 
                             const { error: updateError } = await (supabase.from("bookings") as any)
                               .update({
+                                patient_id: patient.id,
+                                customer_name: `${patient.first_name} ${patient.last_name}`,
+                                customer_email: patient.email,
                                 start_at: match.start_at,
                                 end_at: match.end_at,
                               })
@@ -525,6 +585,9 @@ export default function BookingsPage() {
                                 item.id === editingBookingId
                                   ? {
                                       ...item,
+                                      patient_id: patient.id,
+                                      customer_name: `${patient.first_name} ${patient.last_name}`,
+                                      customer_email: patient.email ?? "",
                                       start_at: match.start_at,
                                       end_at: match.end_at,
                                     }
@@ -535,6 +598,29 @@ export default function BookingsPage() {
                             setSavingEdit(false);
                           }}
                         >
+                          <label className="text-base">
+                            Paciente
+                            <input
+                              className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-3 py-2 text-base"
+                              list="patient-options-edit"
+                              value={editPatientQuery}
+                              onChange={(event) => {
+                                const next = event.target.value;
+                                setEditPatientQuery(next);
+                                setEditPatientId(resolvePatientId(next));
+                              }}
+                              onBlur={() => {
+                                setEditPatientId(resolvePatientId(editPatientQuery));
+                              }}
+                              placeholder="Buscar paciente"
+                              required
+                            />
+                            <datalist id="patient-options-edit">
+                              {patients.map((patient) => (
+                                <option key={patient.id} value={patientLabel(patient)} />
+                              ))}
+                            </datalist>
+                          </label>
                           <div className="grid gap-3 md:grid-cols-2">
                             <label className="text-base">
                               Fecha
@@ -698,6 +784,7 @@ export default function BookingsPage() {
                   },
                   ...current,
                 ]);
+                setCreatePatientQuery("");
                 router.replace("/dashboard/bookings");
               }}
             >
@@ -734,19 +821,26 @@ export default function BookingsPage() {
               </label>
               <label className="text-base">
                 Paciente
-                <select
+                <input
                   className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
-                  value={createPatientId}
-                  onChange={(event) => setCreatePatientId(event.target.value)}
+                  list="patient-options"
+                  value={createPatientQuery}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setCreatePatientQuery(next);
+                    setCreatePatientId(resolvePatientId(next));
+                  }}
+                  onBlur={() => {
+                    setCreatePatientId(resolvePatientId(createPatientQuery));
+                  }}
+                  placeholder="Buscar paciente"
                   required
-                >
-                  <option value="">Selecciona</option>
+                />
+                <datalist id="patient-options">
                   {patients.map((patient) => (
-                    <option key={patient.id} value={patient.id}>
-                      {patient.first_name} {patient.last_name}
-                    </option>
+                    <option key={patient.id} value={patientLabel(patient)} />
                   ))}
-                </select>
+                </datalist>
               </label>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-base">

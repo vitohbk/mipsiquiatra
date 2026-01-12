@@ -465,6 +465,7 @@ export default function ServicesPage() {
       .eq("tenant_id", activeTenantId as string)
       .order("created_at", { ascending: false });
     setServices((data ?? []) as Service[]);
+    router.replace("/dashboard/services");
   };
 
   const handleEditService = async (service: Service) => {
