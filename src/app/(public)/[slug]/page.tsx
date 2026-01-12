@@ -723,14 +723,14 @@ export default function PublicBookingPage() {
                       </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
-                        className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-base uppercase tracking-[0.2em] text-[var(--brand-copper)]"
+                        className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                         type="button"
                         onClick={() => setBookingStep(1)}
                       >
                         Volver
                       </button>
                       <button
-                        className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-base font-semibold uppercase tracking-[0.2em] text-black disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black disabled:cursor-not-allowed disabled:opacity-60"
                         type="button"
                         disabled={!firstName || !lastName || !birthDate || (!noRut && !rut)}
                         onClick={() => {
@@ -936,14 +936,14 @@ export default function PublicBookingPage() {
                       {geoError ? <p className="text-sm text-amber-500">{geoError}</p> : null}
                       <div className="flex flex-wrap justify-end gap-2">
                         <button
-                          className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-base uppercase tracking-[0.2em] text-[var(--brand-copper)]"
+                          className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                           type="button"
                           onClick={() => setBookingStep(2)}
                         >
                           Volver
                         </button>
                         <button
-                          className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-base font-semibold uppercase tracking-[0.2em] text-black"
+                          className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black"
                           type="submit"
                           disabled={isSubmitting}
                           aria-busy={isSubmitting}
