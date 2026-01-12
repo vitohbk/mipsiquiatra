@@ -307,9 +307,9 @@ export default function PublicBookingPage() {
 
   return (
     <main className="min-h-screen bg-[var(--brand-bg)] px-6 py-12 font-[var(--font-source-sans)] text-[var(--brand-body)]">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
-          className="text-sm uppercase tracking-[0.35em] text-[var(--brand-copper)] hover:text-[var(--brand-teal)]"
+          className="text-base uppercase tracking-[0.35em] text-[var(--brand-copper)] hover:text-[var(--brand-teal)]"
           href="/"
         >
           ← Volver
@@ -325,7 +325,7 @@ export default function PublicBookingPage() {
             })()}
           </div>
           <div className="space-y-0.5">
-            <p className="text-xs uppercase tracking-[0.25em] text-[var(--brand-muted)] opacity-70">
+            <p className="text-sm uppercase tracking-[0.25em] text-[var(--brand-muted)] opacity-70">
               {tenant?.name ?? "Reserva"}
             </p>
             <h1 className="text-xl font-[var(--font-playfair)] leading-tight text-[var(--brand-ink)] md:text-2xl">
@@ -333,7 +333,7 @@ export default function PublicBookingPage() {
             </h1>
           </div>
         </div>
-        {error ? <p className="text-sm text-red-500">{error}</p> : null}
+        {error ? <p className="text-base text-red-500">{error}</p> : null}
         <div
           className={`grid items-start gap-6 rounded-3xl border border-[var(--brand-border)] bg-white p-6 shadow-sm ${
             bookingStep === 1 ? "lg:grid-cols-[0.95fr_2.05fr]" : "lg:grid-cols-[1.1fr_1.9fr]"
@@ -358,19 +358,19 @@ export default function PublicBookingPage() {
                   ) : null}
                 </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--brand-ink)]">
+                    <p className="text-base font-semibold text-[var(--brand-ink)]">
                       {service?.professional_name ?? "Profesional"}
                     </p>
-                    <p className="text-xs text-[var(--brand-muted)] opacity-70">
+                    <p className="text-sm text-[var(--brand-muted)] opacity-70">
                       {service?.professional_specialty ?? "Especialidad"}
                     </p>
                   </div>
                 </div>
                 {service?.description ? (
-                  <p className="text-xs text-[var(--brand-muted)] opacity-70">{service.description}</p>
+                  <p className="text-sm text-[var(--brand-muted)] opacity-70">{service.description}</p>
                 ) : null}
               </div>
-              <div className="flex flex-wrap gap-2 text-xs uppercase tracking-wide text-[var(--brand-body)]">
+              <div className="flex flex-wrap gap-2 text-sm uppercase tracking-wide text-[var(--brand-body)]">
                 {service ? (
                   <span className="rounded-full border border-[var(--brand-border)] bg-white px-2 py-1 text-[var(--brand-copper)]">
                     ${service.price_clp.toLocaleString("es-CL")}
@@ -388,8 +388,8 @@ export default function PublicBookingPage() {
                 ) : null}
               </div>
               <div className="border-t border-[var(--brand-border)] pt-3">
-                <p className="text-xs font-semibold text-[var(--brand-muted)]">Fecha y hora</p>
-                <div className="mt-1 space-y-1 text-sm font-medium">
+                <p className="text-sm font-semibold text-[var(--brand-muted)]">Fecha y hora</p>
+                <div className="mt-1 space-y-1 text-base font-medium">
                   <div className="flex items-center gap-2">
                     <svg
                       aria-hidden="true"
@@ -489,7 +489,7 @@ export default function PublicBookingPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--brand-muted)]">
+                  <div className="grid grid-cols-7 gap-2 text-center text-sm text-[var(--brand-muted)]">
                     {weekdayLabels.map((label) => (
                       <div key={label}>{label}</div>
                     ))}
@@ -506,7 +506,7 @@ export default function PublicBookingPage() {
                         <button
                           key={`day-${day}`}
                           type="button"
-                          className={`rounded-full border px-2 py-2 text-sm transition ${
+                          className={`rounded-full border px-2 py-2 text-base transition ${
                             isSelected
                               ? "border-[var(--brand-teal)] bg-[var(--brand-teal)] text-black"
                               : hasSlots
@@ -523,27 +523,33 @@ export default function PublicBookingPage() {
                 </div>
                 <div className="rounded-3xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
                   {slots.length === 0 ? (
-                    <p className="text-sm text-[var(--brand-muted)]">Sin horarios disponibles.</p>
+                    <p className="text-base text-[var(--brand-muted)]">Sin horarios disponibles.</p>
                   ) : (
                     <>
                       <div className="grid gap-2">
                         {slots.map((slot) => {
                           const isSelected = selectedSlot?.start_at === slot.start_at;
-                          return isSelected ? (
+                          return (
                             <div
                               key={slot.start_at}
-                              className="flex items-stretch gap-2 transition-all duration-300 ease-out"
+                              className={`grid items-stretch gap-2 transition-all duration-300 ease-out ${
+                                isSelected ? "grid-cols-[1fr_1.2fr]" : "grid-cols-[1fr_0fr]"
+                              }`}
                             >
                               <button
                                 type="button"
-                                className="flex-1 rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-sm transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
-                                onClick={() => setSelectedSlot(null)}
+                                className="rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-base transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
+                                onClick={() => setSelectedSlot(isSelected ? null : slot)}
                               >
                                 {new Date(slot.start_at).toLocaleString("es-CL", { timeStyle: "short" })}
                               </button>
                               <button
                                 type="button"
-                                className="flex-[1.2] rounded-full bg-[var(--brand-teal)] px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 ease-out"
+                                className={`overflow-hidden rounded-full bg-[var(--brand-teal)] px-4 py-2 text-base font-semibold uppercase tracking-[0.2em] text-black transition-all duration-300 ease-out ${
+                                  isSelected
+                                    ? "opacity-100 translate-x-0"
+                                    : "pointer-events-none opacity-0 translate-x-2"
+                                }`}
                                 onClick={() => {
                                   setError(null);
                                   setBookingStep(2);
@@ -552,15 +558,6 @@ export default function PublicBookingPage() {
                                 Siguiente
                               </button>
                             </div>
-                          ) : (
-                            <button
-                              key={slot.start_at}
-                              type="button"
-                              className="rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-sm transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
-                              onClick={() => setSelectedSlot(slot)}
-                            >
-                              {new Date(slot.start_at).toLocaleString("es-CL", { timeStyle: "short" })}
-                            </button>
                           );
                         })}
                       </div>
@@ -583,7 +580,7 @@ export default function PublicBookingPage() {
                 </div>
               </div>
               {patientLookupError ? (
-                <p className="mt-4 text-xs text-amber-500">{patientLookupError}</p>
+                <p className="mt-4 text-sm text-amber-500">{patientLookupError}</p>
               ) : null}
               <form
                 className="mt-4 grid gap-4"
@@ -726,14 +723,14 @@ export default function PublicBookingPage() {
                       </div>
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
-                        className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
+                        className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-base uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                         type="button"
                         onClick={() => setBookingStep(1)}
                       >
                         Volver
                       </button>
                       <button
-                        className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-base font-semibold uppercase tracking-[0.2em] text-black disabled:cursor-not-allowed disabled:opacity-60"
                         type="button"
                         disabled={!firstName || !lastName || !birthDate || (!noRut && !rut)}
                         onClick={() => {
@@ -935,18 +932,18 @@ export default function PublicBookingPage() {
                           </div>
                         </div>
                       </div>
-                      {bookingStatus ? <p className="text-sm text-emerald-600">{bookingStatus}</p> : null}
-                      {geoError ? <p className="text-xs text-amber-500">{geoError}</p> : null}
+                      {bookingStatus ? <p className="text-base text-emerald-600">{bookingStatus}</p> : null}
+                      {geoError ? <p className="text-sm text-amber-500">{geoError}</p> : null}
                       <div className="flex flex-wrap justify-end gap-2">
                         <button
-                          className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"
+                          className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-base uppercase tracking-[0.2em] text-[var(--brand-copper)]"
                           type="button"
                           onClick={() => setBookingStep(2)}
                         >
                           Volver
                         </button>
                         <button
-                          className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black"
+                          className="rounded-full bg-[var(--brand-teal)] px-6 py-3 text-base font-semibold uppercase tracking-[0.2em] text-black"
                           type="submit"
                           disabled={isSubmitting}
                           aria-busy={isSubmitting}
