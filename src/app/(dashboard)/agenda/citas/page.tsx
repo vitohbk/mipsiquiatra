@@ -128,7 +128,7 @@ export default function BookingsPage() {
         .from("tenants")
         .select("timezone")
         .eq("id", activeTenantId)
-        .maybeSingle();
+        .maybeSingle<{ timezone: string | null }>();
 
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData?.user?.id ?? null;
