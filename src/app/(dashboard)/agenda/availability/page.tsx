@@ -11,6 +11,7 @@ type AvailabilityRule = {
   start_time: string;
   end_time: string;
   timezone: string;
+  service_id: string | null;
 };
 
 type AvailabilityException = {
@@ -20,6 +21,12 @@ type AvailabilityException = {
   end_time: string | null;
   is_available: boolean;
   note: string | null;
+  service_id: string | null;
+};
+
+type Service = {
+  id: string;
+  name: string;
 };
 
 export default function AvailabilityPage() {
@@ -28,6 +35,7 @@ export default function AvailabilityPage() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const [exceptions, setExceptions] = useState<AvailabilityException[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -51,19 +59,23 @@ export default function AvailabilityPage() {
     const load = async () => {
       if (!activeTenantId || !professionalId) return;
 
-      const [rulesResult, exceptionsResult] = await Promise.all([
+      const [rulesResult, exceptionsResult, servicesResult] = await Promise.all([
         supabase
           .from("availability_rules")
-          .select("id, weekday, start_time, end_time, timezone")
+          .select("id, weekday, start_time, end_time, timezone, service_id")
           .eq("tenant_id", activeTenantId)
           .eq("professional_user_id", professionalId)
           .order("weekday", { ascending: true }),
         supabase
           .from("availability_exceptions")
-          .select("id, date, start_time, end_time, is_available, note")
+          .select("id, date, start_time, end_time, is_available, note, service_id")
           .eq("tenant_id", activeTenantId)
           .eq("professional_user_id", professionalId)
           .order("date", { ascending: true }),
+        supabase
+          .from("services")
+          .select("id, name")
+          .eq("tenant_id", activeTenantId),
       ]);
 
       if (rulesResult.error) {
@@ -77,6 +89,7 @@ export default function AvailabilityPage() {
 
       setRules((rulesResult.data ?? []) as AvailabilityRule[]);
       setExceptions((exceptionsResult.data ?? []) as AvailabilityException[]);
+      setServices((servicesResult.data ?? []) as Service[]);
     };
 
     load();
@@ -86,7 +99,7 @@ export default function AvailabilityPage() {
     if (!activeTenantId || !professionalId) return;
     const { data } = await supabase
       .from("availability_rules")
-      .select("id, weekday, start_time, end_time, timezone")
+      .select("id, weekday, start_time, end_time, timezone, service_id")
       .eq("tenant_id", activeTenantId)
       .eq("professional_user_id", professionalId)
       .order("weekday", { ascending: true });
@@ -97,7 +110,7 @@ export default function AvailabilityPage() {
     if (!activeTenantId || !professionalId) return;
     const { data } = await supabase
       .from("availability_exceptions")
-      .select("id, date, start_time, end_time, is_available, note")
+      .select("id, date, start_time, end_time, is_available, note, service_id")
       .eq("tenant_id", activeTenantId)
       .eq("professional_user_id", professionalId)
       .order("date", { ascending: true });
@@ -209,6 +222,43 @@ export default function AvailabilityPage() {
     await refreshExceptions();
   };
 
+  const serviceMap = new Map(services.map((service) => [service.id, service.name]));
+  const groupedRules = rules.reduce((acc, rule) => {
+    const key = rule.service_id ?? "general";
+    const list = acc.get(key);
+    if (list) {
+      list.push(rule);
+    } else {
+      acc.set(key, [rule]);
+    }
+    return acc;
+  }, new Map<string, AvailabilityRule[]>());
+
+  const groupedExceptions = exceptions.reduce((acc, exception) => {
+    const key = exception.service_id ?? "general";
+    const list = acc.get(key);
+    if (list) {
+      list.push(exception);
+    } else {
+      acc.set(key, [exception]);
+    }
+    return acc;
+  }, new Map<string, AvailabilityException[]>());
+  const groupedExceptionEntries = Array.from(groupedExceptions.entries()).sort(([a], [b]) => {
+    if (a === "general") return -1;
+    if (b === "general") return 1;
+    const aLabel = serviceMap.get(a) ?? "";
+    const bLabel = serviceMap.get(b) ?? "";
+    return aLabel.localeCompare(bLabel);
+  });
+  const groupedRuleEntries = Array.from(groupedRules.entries()).sort(([a], [b]) => {
+    if (a === "general") return -1;
+    if (b === "general") return 1;
+    const aLabel = serviceMap.get(a) ?? "";
+    const bLabel = serviceMap.get(b) ?? "";
+    return aLabel.localeCompare(bLabel);
+  });
+
   return (
     <section className="space-y-8 pt-2">
       <div className="space-y-2">
@@ -220,7 +270,7 @@ export default function AvailabilityPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <form
-          className="space-y-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6"
+          className="space-y-4 rounded-2xl border border-[rgba(36,40,38,0.04)] bg-white/80 p-6"
           onSubmit={handleCreateRule}
         >
           <h2 className="text-lg font-semibold">Regla semanal</h2>
@@ -239,7 +289,7 @@ export default function AvailabilityPage() {
         </form>
 
         <form
-          className="space-y-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6"
+          className="space-y-4 rounded-2xl border border-[rgba(36,40,38,0.04)] bg-white/80 p-6"
           onSubmit={handleCreateException}
         >
           <h2 className="text-lg font-semibold">Excepcion</h2>
@@ -319,24 +369,37 @@ export default function AvailabilityPage() {
           {rules.length === 0 ? (
             <p className="text-sm text-[var(--panel-muted)]">Sin reglas aun.</p>
           ) : (
-            <div className="space-y-2">
-              {rules.map((rule) => (
-                <div
-                  key={rule.id}
-                  className="flex items-center justify-between rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-2 text-sm"
-                >
-                  <span>
-                    {weekdayLabels[rule.weekday]} · {rule.start_time} - {rule.end_time}
-                  </span>
-                  <button
-                    className="text-xs text-[var(--panel-muted)] hover:text-[var(--page-text)]"
-                    type="button"
-                    onClick={() => handleDeleteRule(rule.id)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {groupedRuleEntries.map(([groupKey, groupRules]) => {
+                const label =
+                  groupKey === "general"
+                    ? "General"
+                    : `Servicio: ${serviceMap.get(groupKey) ?? "Sin nombre"}`;
+                return (
+                  <div key={groupKey} className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--panel-muted)]">
+                      {label}
+                    </p>
+                    {groupRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="flex items-center justify-between rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-2 text-sm"
+                      >
+                        <span>
+                          {weekdayLabels[rule.weekday]} · {rule.start_time} - {rule.end_time}
+                        </span>
+                        <button
+                          className="text-xs text-[var(--panel-muted)] hover:text-[var(--page-text)]"
+                          type="button"
+                          onClick={() => handleDeleteRule(rule.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -345,26 +408,39 @@ export default function AvailabilityPage() {
           {exceptions.length === 0 ? (
             <p className="text-sm text-[var(--panel-muted)]">Sin excepciones aun.</p>
           ) : (
-            <div className="space-y-2">
-              {exceptions.map((ex) => (
-                <div
-                  key={ex.id}
-                  className="flex items-center justify-between rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-2 text-sm"
-                >
-                  <span>
-                    {ex.date} · {ex.is_available ? "Disponible" : "Bloqueado"}
-                    {ex.start_time && ex.end_time ? ` (${ex.start_time} - ${ex.end_time})` : ""}
-                    {ex.note ? ` · ${ex.note}` : ""}
-                  </span>
-                  <button
-                    className="text-xs text-[var(--panel-muted)] hover:text-[var(--page-text)]"
-                    type="button"
-                    onClick={() => handleDeleteException(ex.id)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {groupedExceptionEntries.map(([groupKey, groupExceptions]) => {
+                const label =
+                  groupKey === "general"
+                    ? "General"
+                    : `Servicio: ${serviceMap.get(groupKey) ?? "Sin nombre"}`;
+                return (
+                  <div key={groupKey} className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--panel-muted)]">
+                      {label}
+                    </p>
+                    {groupExceptions.map((ex) => (
+                      <div
+                        key={ex.id}
+                        className="flex items-center justify-between rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-2 text-sm"
+                      >
+                        <span>
+                          {ex.date} · {ex.is_available ? "Disponible" : "Bloqueado"}
+                          {ex.start_time && ex.end_time ? ` (${ex.start_time} - ${ex.end_time})` : ""}
+                          {ex.note ? ` · ${ex.note}` : ""}
+                        </span>
+                        <button
+                          className="text-xs text-[var(--panel-muted)] hover:text-[var(--page-text)]"
+                          type="button"
+                          onClick={() => handleDeleteException(ex.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

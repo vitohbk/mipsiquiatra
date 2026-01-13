@@ -3,6 +3,9 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase.ts";
 import { assertString } from "../_shared/validation.ts";
 
+const notifyUrl = Deno.env.get("NOTIFY_WEBHOOK_URL") ?? "";
+const notifySecret = Deno.env.get("NOTIFY_WEBHOOK_SECRET") ?? "";
+
 async function hashToken(token: string) {
   const data = new TextEncoder().encode(token);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -126,6 +129,38 @@ serve(async (req) => {
       .from("booking_action_tokens")
       .update({ used_at: new Date().toISOString() })
       .eq("id", tokenRow.id);
+
+    if (notifyUrl && notifySecret) {
+      const { data: bookingDetails } = await admin
+        .from("bookings")
+        .select("customer_name, customer_email, services(name), tenants(name, timezone)")
+        .eq("id", booking.id)
+        .maybeSingle();
+      const recipient = bookingDetails?.customer_email;
+      if (recipient) {
+        const timezone = bookingDetails?.tenants?.timezone ?? "America/Santiago";
+        try {
+          await fetch(notifyUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${notifySecret}`,
+            },
+            body: JSON.stringify({
+              type: "rescheduled",
+              to: recipient,
+              customer_name: bookingDetails?.customer_name ?? null,
+              service_name: bookingDetails?.services?.name ?? null,
+              tenant_name: bookingDetails?.tenants?.name ?? null,
+              start_at: startAt.toISOString(),
+              timezone,
+            }),
+          });
+        } catch (_error) {
+          // Best-effort notification.
+        }
+      }
+    }
 
     return new Response(JSON.stringify({ status: "ok", start_at: startAt.toISOString() }), {
       status: 200,

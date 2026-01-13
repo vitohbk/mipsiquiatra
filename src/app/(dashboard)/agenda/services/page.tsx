@@ -850,7 +850,7 @@ export default function ServicesPage() {
                     key={service.id}
                     role="button"
                     tabIndex={0}
-                    className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4 text-left transition hover:border-[var(--page-text)]"
+                    className="rounded-2xl border border-[rgba(36,40,38,0.04)] bg-white/80 p-4 text-left transition hover:bg-white"
                     onClick={() => handleEditService(service)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {

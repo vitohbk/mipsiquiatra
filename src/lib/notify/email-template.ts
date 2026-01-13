@@ -1,5 +1,5 @@
 export type NotifyPayload = {
-  type: "confirmation" | "reminder";
+  type: "confirmation" | "cancelled" | "rescheduled";
   to: string;
   customer_name?: string | null;
   service_name?: string | null;
@@ -25,14 +25,25 @@ export function buildBookingEmail(payload: NotifyPayload) {
   const serviceName = payload.service_name ?? "tu atención";
   const customerName = payload.customer_name ?? "hola";
 
-  const subject =
-    payload.type === "reminder" ? "Recordatorio de tu reserva" : "Reserva confirmada";
+  const subjectMap: Record<NotifyPayload["type"], string> = {
+    confirmation: "Reserva confirmada",
+    cancelled: "Reserva cancelada",
+    rescheduled: "Reserva reprogramada",
+  };
+  const titleMap: Record<NotifyPayload["type"], string> = {
+    confirmation: "Reserva confirmada",
+    cancelled: "Reserva cancelada",
+    rescheduled: "Reserva reprogramada",
+  };
+  const bodyTextMap: Record<NotifyPayload["type"], string> = {
+    confirmation: `Tu reserva para ${serviceName} quedó confirmada.`,
+    cancelled: `Tu reserva para ${serviceName} fue cancelada.`,
+    rescheduled: `Tu reserva para ${serviceName} fue reprogramada.`,
+  };
 
-  const title = payload.type === "reminder" ? "Recordatorio de reserva" : "Reserva confirmada";
-  const bodyText =
-    payload.type === "reminder"
-      ? `Te recordamos tu reserva para ${serviceName}.`
-      : `Tu reserva para ${serviceName} quedó confirmada.`;
+  const subject = subjectMap[payload.type];
+  const title = titleMap[payload.type];
+  const bodyText = bodyTextMap[payload.type];
 
   const actionButtons = payload.cancel_url || payload.reschedule_url
     ? `
@@ -68,7 +79,7 @@ export function buildBookingEmail(payload: NotifyPayload) {
                   <p style="margin:0;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#0f766e;">${tenantName}</p>
                 </td>
                 <td align="right" style="vertical-align:middle;">
-                  <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:#fff2df;color:#b45309;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">${payload.type === "reminder" ? "Recordatorio" : "Confirmación"}</span>
+                  <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:#fff2df;color:#b45309;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;">${title}</span>
                 </td>
               </tr>
             </table>
@@ -78,7 +89,12 @@ export function buildBookingEmail(payload: NotifyPayload) {
         </tr>
         <tr>
           <td style="padding:22px 34px 6px;font-family:Arial, sans-serif;color:#0f172a;">
-            <p style="margin:0 0 16px;font-size:15px;">Hola ${customerName},</p>
+            <p style="margin:0 0 8px;font-size:15px;">Hola ${customerName},</p>
+            ${payload.type !== "cancelled" ? `
+              <p style="margin:0 0 16px;font-size:15px;color:#334155;">
+                Aca dejamos los detalles de tu cita:
+              </p>
+            ` : ""}
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 12px;">
               <tr>
                 <td style="padding:16px 18px;border-radius:16px;background:#f0fdfa;border:1px solid #cfeee9;">
@@ -93,15 +109,18 @@ export function buildBookingEmail(payload: NotifyPayload) {
                 </td>
               </tr>
             </table>
+            ${payload.type !== "cancelled" ? `
+              <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#0f766e;">
+                <strong>IMPORTANTE:</strong> Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion.
+                Su numero es el <a href="https://wa.me/56968051535" style="color:#0f766e;text-decoration:underline;">+56968051535</a>.
+              </p>
+            ` : ""}
           </td>
         </tr>
-        ${actionButtons}
+        ${payload.type === "confirmation" ? actionButtons : ""}
         <tr>
           <td style="padding:20px 34px 30px;font-family:Arial, sans-serif;color:#475569;">
             <p style="margin:0;">Gracias por confiar en ${tenantName}.</p>
-            <p style="margin:10px 0 0;font-size:12px;color:#0f766e;">
-              Si necesitas reprogramar o cancelar, puedes usar los botones anteriores.
-            </p>
           </td>
         </tr>
       </table>
