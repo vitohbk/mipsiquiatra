@@ -99,6 +99,7 @@ export default function BookingsPage() {
         .from("bookings")
         .select("id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality), payments(status)")
         .eq("tenant_id", activeTenantId)
+        .neq("status", "cancelled")
         .order("start_at", { ascending: true });
 
       if (bookingError) {
@@ -495,11 +496,7 @@ export default function BookingsPage() {
         // Best-effort cancellation email for manual actions.
       }
     }
-    setBookings((current) =>
-      current.map((booking) =>
-        booking.id === bookingId ? { ...booking, status: "cancelled" } : booking,
-      ),
-    );
+    setBookings((current) => current.filter((booking) => booking.id !== bookingId));
     setEditingBookingId(null);
     setSavingEdit(false);
   };
