@@ -458,8 +458,8 @@ export default function BookingsPage() {
     setError(null);
     setMarkingPaidId(paymentId);
     setPaymentStatusMap((current) => ({ ...current, [paymentId]: "paid" }));
-    const { error: updateError } = await supabase
-      .from("payments")
+    const { error: updateError } = await (supabase
+      .from("payments") as any)
       .update({ status: "paid" })
       .eq("id", paymentId);
     if (updateError) {
