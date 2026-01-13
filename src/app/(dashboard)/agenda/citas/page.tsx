@@ -483,6 +483,18 @@ export default function BookingsPage() {
       setSavingEdit(false);
       return;
     }
+    const cancelledBooking = bookings.find((booking) => booking.id === bookingId);
+    if (cancelledBooking?.id) {
+      try {
+        await callEdgeFunction("booking_notify", {
+          booking_id: cancelledBooking.id,
+          customer_email: cancelledBooking.customer_email,
+          type: "cancelled",
+        });
+      } catch (_error) {
+        // Best-effort cancellation email for manual actions.
+      }
+    }
     setBookings((current) =>
       current.map((booking) =>
         booking.id === bookingId ? { ...booking, status: "cancelled" } : booking,
@@ -702,6 +714,17 @@ export default function BookingsPage() {
                                   : item,
                               ),
                             );
+                            if (editingBookingId) {
+                              try {
+                                await callEdgeFunction("booking_notify", {
+                                  booking_id: editingBookingId,
+                                  customer_email: patient.email ?? "",
+                                  type: "rescheduled",
+                                });
+                              } catch (_error) {
+                                // Best-effort reschedule email for manual actions.
+                              }
+                            }
                             setEditingBookingId(null);
                             setSavingEdit(false);
                           }}
@@ -876,6 +899,18 @@ export default function BookingsPage() {
                 if (insertError) {
                   setError(insertError.message);
                   return;
+                }
+
+                if (insertedBooking?.id) {
+                  try {
+                    await callEdgeFunction("booking_notify", {
+                      booking_id: insertedBooking.id,
+                      customer_email: patient.email,
+                      type: "confirmation",
+                    });
+                  } catch (_error) {
+                    // Best-effort confirmation email for manual bookings.
+                  }
                 }
 
                 setBookings((current) => [

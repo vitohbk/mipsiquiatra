@@ -53,6 +53,7 @@ serve(async (req) => {
     const payload = await req.json();
     const bookingId = payload.booking_id?.toString();
     const customerEmail = payload.customer_email?.toString();
+    const type = (payload.type ?? "confirmation") as "confirmation" | "cancelled" | "rescheduled";
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
@@ -91,8 +92,13 @@ serve(async (req) => {
     }
 
     const timezone = booking.tenants?.timezone ?? "America/Santiago";
-    const cancelToken = await createActionToken(admin, booking.id, "cancel");
-    const rescheduleToken = await createActionToken(admin, booking.id, "reschedule");
+    const shouldIncludeActions = type === "confirmation";
+    const cancelToken = shouldIncludeActions
+      ? await createActionToken(admin, booking.id, "cancel")
+      : null;
+    const rescheduleToken = shouldIncludeActions
+      ? await createActionToken(admin, booking.id, "reschedule")
+      : null;
     const notifyResponse = await fetch(notifyUrl, {
       method: "POST",
       headers: {
@@ -100,15 +106,15 @@ serve(async (req) => {
         Authorization: `Bearer ${notifySecret}`,
       },
       body: JSON.stringify({
-        type: "confirmation",
+        type,
         to: recipient,
         customer_name: booking.customer_name,
         service_name: booking.services?.name ?? null,
         tenant_name: booking.tenants?.name ?? null,
         start_at: booking.start_at,
         timezone,
-        cancel_url: `${publicSiteUrl}/booking/${cancelToken}/cancelar`,
-        reschedule_url: `${publicSiteUrl}/booking/${rescheduleToken}/reprogramar`,
+        cancel_url: cancelToken ? `${publicSiteUrl}/booking/${cancelToken}/cancelar` : null,
+        reschedule_url: rescheduleToken ? `${publicSiteUrl}/booking/${rescheduleToken}/reprogramar` : null,
       }),
     });
 
