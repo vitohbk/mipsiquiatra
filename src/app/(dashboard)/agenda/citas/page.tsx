@@ -320,18 +320,6 @@ export default function BookingsPage() {
     return status === "paid";
   };
 
-  const toLocalDateInput = (iso: string) => {
-    const date = new Date(iso);
-    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 10);
-  };
-
-  const toLocalTimeInput = (iso: string) => {
-    const date = new Date(iso);
-    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(11, 16);
-  };
-
   const toTenantDateKey = (iso: string) =>
     new Intl.DateTimeFormat("en-CA", {
       timeZone: tenantTimezone,
@@ -345,6 +333,7 @@ export default function BookingsPage() {
       timeZone: tenantTimezone,
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     }).format(new Date(iso));
 
   const groupedBookings = bookings.reduce((acc, booking) => {
@@ -385,9 +374,9 @@ export default function BookingsPage() {
       setAvailableSlots(slots);
       onSlots?.(slots);
       if (slots.length > 0) {
-        const current = slots.find((slot) => toLocalTimeInput(slot.start_at) === editTime);
+        const current = slots.find((slot) => formatTenantTime(slot.start_at) === editTime);
         if (!current) {
-          setEditTime(toLocalTimeInput(slots[0].start_at));
+          setEditTime(formatTenantTime(slots[0].start_at));
         }
       } else {
         setEditTime("");
@@ -418,9 +407,9 @@ export default function BookingsPage() {
       const slots = availability.slots ?? [];
       setCreateAvailableSlots(slots);
       if (slots.length > 0) {
-        const current = slots.find((slot) => toLocalTimeInput(slot.start_at) === createTime);
+        const current = slots.find((slot) => formatTenantTime(slot.start_at) === createTime);
         if (!current) {
-          setCreateTime(toLocalTimeInput(slots[0].start_at));
+          setCreateTime(formatTenantTime(slots[0].start_at));
         }
       } else {
         setCreateTime("");
@@ -441,12 +430,9 @@ export default function BookingsPage() {
     setEditPatientQuery(patient ? patientNameLabel(patient) : booking.customer_name ?? "");
     setEditOriginalStartAt(booking.start_at);
     setEditOriginalEndAt(booking.end_at);
-    const start = new Date(booking.start_at);
-    const localDate = new Date(start.getTime() - start.getTimezoneOffset() * 60000);
-    const [datePart, timePart] = localDate.toISOString().split("T");
-    const nextDate = datePart ?? "";
+    const nextDate = toTenantDateKey(booking.start_at);
     setEditDate(nextDate);
-    setEditTime(timePart ? timePart.slice(0, 5) : "");
+    setEditTime(formatTenantTime(booking.start_at));
 
     if (!activeTenantId || !booking.service_id || !booking.professional_user_id) {
       setAvailabilityLink(null);
@@ -687,14 +673,14 @@ export default function BookingsPage() {
 
                             const match = availableSlots.find(
                               (slot) =>
-                                toLocalDateInput(slot.start_at) === editDate &&
-                                toLocalTimeInput(slot.start_at) === editTime,
+                                toTenantDateKey(slot.start_at) === editDate &&
+                                formatTenantTime(slot.start_at) === editTime,
                             );
                             const originalDate = editOriginalStartAt
-                              ? toLocalDateInput(editOriginalStartAt)
+                              ? toTenantDateKey(editOriginalStartAt)
                               : "";
                             const originalTime = editOriginalStartAt
-                              ? toLocalTimeInput(editOriginalStartAt)
+                              ? formatTenantTime(editOriginalStartAt)
                               : "";
                             const isOriginalSlot =
                               Boolean(editOriginalStartAt && editOriginalEndAt) &&
@@ -825,8 +811,8 @@ export default function BookingsPage() {
                                     : "Selecciona"}
                                 </option>
                                 {availableSlots.map((slot) => {
-                                  if (toLocalDateInput(slot.start_at) !== editDate) return null;
-                                  const label = toLocalTimeInput(slot.start_at);
+                                  if (toTenantDateKey(slot.start_at) !== editDate) return null;
+                                  const label = formatTenantTime(slot.start_at);
                                   return (
                                     <option key={`${slot.start_at}-${slot.end_at}`} value={label}>
                                       {label}
@@ -905,8 +891,8 @@ export default function BookingsPage() {
 
                 const match = createAvailableSlots.find(
                   (slot) =>
-                    toLocalDateInput(slot.start_at) === createDate &&
-                    toLocalTimeInput(slot.start_at) === createTime,
+                    toTenantDateKey(slot.start_at) === createDate &&
+                    formatTenantTime(slot.start_at) === createTime,
                 );
                 if (!match) {
                   setError("Selecciona un horario disponible.");
@@ -1058,8 +1044,8 @@ export default function BookingsPage() {
                         : "Selecciona"}
                     </option>
                     {createAvailableSlots.map((slot) => {
-                      if (toLocalDateInput(slot.start_at) !== createDate) return null;
-                      const label = toLocalTimeInput(slot.start_at);
+                      if (toTenantDateKey(slot.start_at) !== createDate) return null;
+                      const label = formatTenantTime(slot.start_at);
                       return (
                         <option key={`${slot.start_at}-${slot.end_at}`} value={label}>
                           {label}
