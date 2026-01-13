@@ -64,6 +64,7 @@ export default function BookingsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [paymentStatusMap, setPaymentStatusMap] = useState<PaymentStatusMap>({});
+  const [tenantTimezone, setTenantTimezone] = useState("America/Santiago");
   const [error, setError] = useState<string | null>(null);
   const [createServiceId, setCreateServiceId] = useState("");
   const [createPatientId, setCreatePatientId] = useState("");
@@ -123,6 +124,11 @@ export default function BookingsPage() {
         .from("memberships")
         .select("user_id, role, secondary_role")
         .eq("tenant_id", activeTenantId);
+      const { data: tenantData } = await supabase
+        .from("tenants")
+        .select("timezone")
+        .eq("id", activeTenantId)
+        .maybeSingle();
 
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData?.user?.id ?? null;
@@ -137,6 +143,7 @@ export default function BookingsPage() {
           (currentMembership.secondary_role &&
             ["owner", "admin"].includes(currentMembership.secondary_role)));
       setCanManageBookings(Boolean(canManage));
+      setTenantTimezone(tenantData?.timezone ?? "America/Santiago");
 
       let professionalList: Professional[] = [];
       const eligibleMembers = ((memberData ?? []) as Array<{
@@ -281,10 +288,19 @@ export default function BookingsPage() {
 
   const formatDateLabel = (value: string) => {
     const date = new Date(value);
-    const weekday = date.toLocaleDateString("es-CL", { weekday: "long" });
-    const rest = date.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
+    const parts = new Intl.DateTimeFormat("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: tenantTimezone,
+    }).formatToParts(date);
+    const lookup: Record<string, string> = {};
+    for (const part of parts) lookup[part.type] = part.value;
+    const weekday = lookup.weekday ?? "";
     const weekdayLabel = weekday ? `${weekday[0].toUpperCase()}${weekday.slice(1)}` : weekday;
-    return `${weekdayLabel}, ${rest}`;
+    const rest = `${lookup.day ?? ""} ${lookup.month ?? ""} ${lookup.year ?? ""}`.trim();
+    return `${weekdayLabel}, ${rest}`.trim();
   };
 
   const servicePillStyle = (name?: string | null) => {
@@ -304,17 +320,6 @@ export default function BookingsPage() {
     return status === "paid";
   };
 
-  const groupedBookings = bookings.reduce((acc, booking) => {
-    const dateKey = booking.start_at.slice(0, 10);
-    const existing = acc.get(dateKey);
-    if (existing) {
-      existing.push(booking);
-    } else {
-      acc.set(dateKey, [booking]);
-    }
-    return acc;
-  }, new Map<string, Booking[]>());
-
   const toLocalDateInput = (iso: string) => {
     const date = new Date(iso);
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -326,6 +331,32 @@ export default function BookingsPage() {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(11, 16);
   };
+
+  const toTenantDateKey = (iso: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: tenantTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+
+  const formatTenantTime = (iso: string) =>
+    new Intl.DateTimeFormat("es-CL", {
+      timeZone: tenantTimezone,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+
+  const groupedBookings = bookings.reduce((acc, booking) => {
+    const dateKey = toTenantDateKey(booking.start_at);
+    const existing = acc.get(dateKey);
+    if (existing) {
+      existing.push(booking);
+    } else {
+      acc.set(dateKey, [booking]);
+    }
+    return acc;
+  }, new Map<string, Booking[]>());
 
   const loadAvailability = async (
     link: { slug: string | null; public_token: string | null },
@@ -487,11 +518,15 @@ export default function BookingsPage() {
     const cancelledBooking = bookings.find((booking) => booking.id === bookingId);
     if (cancelledBooking?.id) {
       try {
-        await callEdgeFunction("booking_notify", {
-          booking_id: cancelledBooking.id,
-          customer_email: cancelledBooking.customer_email,
-          type: "cancelled",
-        });
+        await callEdgeFunction(
+          "booking_notify",
+          {
+            booking_id: cancelledBooking.id,
+            customer_email: cancelledBooking.customer_email,
+            type: "cancelled",
+          },
+          { disableAuth: true },
+        );
       } catch (_error) {
         // Best-effort cancellation email for manual actions.
       }
@@ -538,10 +573,7 @@ export default function BookingsPage() {
                                 booking.services?.name,
                               )}`}
                             >
-                              {new Date(booking.start_at).toLocaleTimeString("es-CL", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {formatTenantTime(booking.start_at)}
                             </div>
                           </div>
                           <div className="space-y-0 leading-tight">
@@ -713,11 +745,15 @@ export default function BookingsPage() {
                             );
                             if (editingBookingId) {
                               try {
-                                await callEdgeFunction("booking_notify", {
-                                  booking_id: editingBookingId,
-                                  customer_email: patient.email ?? "",
-                                  type: "rescheduled",
-                                });
+                                await callEdgeFunction(
+                                  "booking_notify",
+                                  {
+                                    booking_id: editingBookingId,
+                                    customer_email: patient.email ?? "",
+                                    type: "rescheduled",
+                                  },
+                                  { disableAuth: true },
+                                );
                               } catch (_error) {
                                 // Best-effort reschedule email for manual actions.
                               }
@@ -900,11 +936,15 @@ export default function BookingsPage() {
 
                 if (insertedBooking?.id) {
                   try {
-                    await callEdgeFunction("booking_notify", {
-                      booking_id: insertedBooking.id,
-                      customer_email: patient.email,
-                      type: "confirmation",
-                    });
+                    await callEdgeFunction(
+                      "booking_notify",
+                      {
+                        booking_id: insertedBooking.id,
+                        customer_email: patient.email,
+                        type: "confirmation",
+                      },
+                      { disableAuth: true },
+                    );
                   } catch (_error) {
                     // Best-effort confirmation email for manual bookings.
                   }

@@ -20,6 +20,12 @@ export async function POST(req: Request) {
   const fromEmail = process.env.SMTP_FROM ?? "";
 
   if (!smtpHost || !smtpUser || !smtpPass || !fromEmail) {
+    console.error("notify: missing SMTP configuration", {
+      smtpHost: Boolean(smtpHost),
+      smtpUser: Boolean(smtpUser),
+      smtpPass: Boolean(smtpPass),
+      fromEmail: Boolean(fromEmail),
+    });
     return NextResponse.json({ error: "Missing SMTP configuration" }, { status: 500 });
   }
 
@@ -40,12 +46,21 @@ export async function POST(req: Request) {
     },
   });
 
-  await transporter.sendMail({
-    from: fromEmail,
-    to: payload.to,
-    subject,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: fromEmail,
+      to: payload.to,
+      subject,
+      html,
+    });
+  } catch (error) {
+    console.error("notify: sendMail failed", {
+      message: error instanceof Error ? error.message : String(error),
+      to: payload.to,
+      subject,
+    });
+    return NextResponse.json({ error: "Send failed" }, { status: 500 });
+  }
 
   return NextResponse.json({ status: "ok" });
 }

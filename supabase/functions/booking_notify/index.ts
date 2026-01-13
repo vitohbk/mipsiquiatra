@@ -63,6 +63,10 @@ serve(async (req) => {
     }
 
     if (!notifyUrl || !notifySecret) {
+      console.log("booking_notify: missing notify config", {
+        hasNotifyUrl: Boolean(notifyUrl),
+        hasNotifySecret: Boolean(notifySecret),
+      });
       return new Response(JSON.stringify({ status: "skipped" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -85,6 +89,9 @@ serve(async (req) => {
 
     const recipient = customerEmail || booking.customer_email;
     if (!recipient) {
+      console.log("booking_notify: missing recipient", {
+        bookingId: booking.id,
+      });
       return new Response(JSON.stringify({ error: "customer_email required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -120,12 +127,23 @@ serve(async (req) => {
 
     if (!notifyResponse.ok) {
       const errorBody = await notifyResponse.text();
+      console.log("booking_notify: webhook error", {
+        status: notifyResponse.status,
+        body: errorBody,
+        recipient,
+        bookingId: booking.id,
+      });
       return new Response(JSON.stringify({ error: `Notify error: ${errorBody}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("booking_notify: sent", {
+      recipient,
+      bookingId: booking.id,
+      type: payload.type ?? "confirmation",
+    });
     return new Response(JSON.stringify({ status: "ok" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
