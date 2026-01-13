@@ -287,7 +287,8 @@ export default function BookingsPage() {
   };
 
   const formatDateLabel = (value: string) => {
-    const date = new Date(value);
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1, 12, 0, 0));
     const parts = new Intl.DateTimeFormat("es-CL", {
       weekday: "long",
       day: "numeric",
