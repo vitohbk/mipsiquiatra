@@ -37,6 +37,7 @@ const landingVariants: Record<string, LandingCopy> = {
 };
 
 const defaultDescription = "Psiquiatría clínica para adultos por videollamada en Chile.";
+const metadataBase = new URL("https://www.mipsiquiatra.cl");
 
 const toTitleCase = (value: string) =>
   value
@@ -58,17 +59,19 @@ const getLandingCopy = (slug: string): LandingCopy => {
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const copy = getLandingCopy(params.slug);
+  const canonicalUrl = new URL(`/lp/${params.slug}`, metadataBase);
 
   return {
+    metadataBase,
     title: copy.title,
     description: copy.description,
     alternates: {
-      canonical: `/lp/${params.slug}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
       title: copy.title,
       description: copy.description,
-      url: `/lp/${params.slug}`,
+      url: canonicalUrl,
     },
   };
 }
