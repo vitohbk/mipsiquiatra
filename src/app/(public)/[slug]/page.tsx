@@ -67,8 +67,20 @@ function addMonths(date: Date, amount: number) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1));
 }
 
+function addDays(date: Date, amount: number) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + amount));
+}
+
 function formatLocalDate(date: Date) {
   return date.toLocaleDateString("es-CL", { dateStyle: "full", timeZone: "UTC" });
+}
+
+function normalizeUtcDate(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function getFirstSlot(availability: Slot[]) {
+  return availability.slice().sort((a, b) => a.start_at.localeCompare(b.start_at))[0] ?? null;
 }
 
 const insuranceOptions = [
@@ -85,6 +97,7 @@ export default function PublicBookingPage() {
   const [service, setService] = useState<ServiceInfo | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [nextAvailableSlot, setNextAvailableSlot] = useState<Slot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [firstName, setFirstName] = useState("");
@@ -116,6 +129,8 @@ export default function PublicBookingPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [monthCursor, setMonthCursor] = useState<Date>(new Date());
   const [monthAvailability, setMonthAvailability] = useState<Record<string, number>>({});
+  const [autoSelectFirstSlot, setAutoSelectFirstSlot] = useState(false);
+  const autoSelectedDateRef = useRef(false);
 
   useEffect(() => {
     const load = async () => {
@@ -146,6 +161,49 @@ export default function PublicBookingPage() {
     };
 
     load();
+  }, [slug]);
+
+  useEffect(() => {
+    const loadNextAvailability = async () => {
+      if (!slug) return;
+      try {
+        const today = normalizeUtcDate(new Date());
+        const maxLookaheadDays = 93;
+        let cursor = today;
+        let nextSlot: Slot | null = null;
+
+        while (!nextSlot) {
+          const rangeEnd = addDays(cursor, 30);
+          const availability = await callEdgeFunction<{ slots: Slot[] }>(
+            "public_availability",
+            {
+              slug,
+              start_date: formatDate(cursor),
+              end_date: formatDate(rangeEnd),
+            },
+            { disableAuth: true },
+          );
+          nextSlot = getFirstSlot(availability.slots);
+          if (nextSlot || formatDate(rangeEnd) === formatDate(addDays(today, maxLookaheadDays))) {
+            break;
+          }
+          cursor = addDays(rangeEnd, 1);
+        }
+
+        setNextAvailableSlot(nextSlot);
+
+        if (!autoSelectedDateRef.current && nextSlot) {
+          const nextDate = normalizeUtcDate(new Date(nextSlot.start_at));
+          setSelectedDate(nextDate);
+          setMonthCursor(startOfMonth(nextDate));
+          autoSelectedDateRef.current = true;
+        }
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Error cargando");
+      }
+    };
+
+    loadNextAvailability();
   }, [slug]);
 
   useEffect(() => {
@@ -222,8 +280,18 @@ export default function PublicBookingPage() {
           },
           { disableAuth: true },
         );
-        setSlots(availability.slots);
-        setSelectedSlot(null);
+        const orderedSlots = availability.slots.slice().sort((a, b) => a.start_at.localeCompare(b.start_at));
+        setSlots(orderedSlots);
+        if (autoSelectFirstSlot) {
+          if (orderedSlots.length > 0) {
+            setSelectedSlot(orderedSlots[0]);
+          } else {
+            setSelectedSlot(null);
+          }
+          setAutoSelectFirstSlot(false);
+        } else {
+          setSelectedSlot(null);
+        }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
       }
@@ -441,12 +509,40 @@ export default function PublicBookingPage() {
                   />
                 </div>
               </div>
-              <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-xl">
-                      {capitalizeFirst(monthCursor.toLocaleDateString("es-CL", { month: "long" }))}
-                    </h2>
+                <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                  <div className="space-y-4">
+                    {nextAvailableSlot ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-medium">
+                            Próxima disponibilidad:{" "}
+                            {new Date(nextAvailableSlot.start_at)
+                              .toLocaleDateString("es-CL", { weekday: "long", day: "numeric" })
+                              .replace(",", "")}
+                            ,{" "}
+                            {new Date(nextAvailableSlot.start_at).toLocaleString("es-CL", {
+                              timeStyle: "short",
+                            })}
+                          </p>
+                          <button
+                            type="button"
+                            className="rounded-full border border-emerald-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-900"
+                            onClick={() => {
+                              const nextDate = normalizeUtcDate(new Date(nextAvailableSlot.start_at));
+                              setSelectedDate(nextDate);
+                              setMonthCursor(startOfMonth(nextDate));
+                              setAutoSelectFirstSlot(true);
+                            }}
+                          >
+                            Ir a la primera hora disponible
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-xl">
+                        {capitalizeFirst(monthCursor.toLocaleDateString("es-CL", { month: "long" }))}
+                      </h2>
                     <div className="flex items-center gap-2">
                       <button
                         className="rounded-full border border-[var(--brand-border)] p-1 text-xs text-[var(--brand-copper)] transition hover:text-[var(--brand-teal)]"
@@ -523,7 +619,9 @@ export default function PublicBookingPage() {
                 </div>
                 <div className="rounded-3xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
                   {slots.length === 0 ? (
-                    <p className="text-base text-[var(--brand-muted)]">Sin horarios disponibles.</p>
+                    <p className="text-base text-[var(--brand-muted)]">
+                      No hay horas hoy. Busca un día diferente.
+                    </p>
                   ) : (
                     <>
                       <div className="grid gap-2">

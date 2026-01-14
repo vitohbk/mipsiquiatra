@@ -154,10 +154,10 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
         }}
       >
         <div className="mx-auto max-w-6xl px-6 py-20 text-white">
-          <p className="text-lg uppercase tracking-[0.35em] text-white/80">
-            Caminos Difíciles, llevan a Lugares Hermosos
-          </p>
           <h1 className="mt-6 font-[var(--font-playfair)] text-[5rem] leading-[1.1]">{heroTitle}</h1>
+          <p className="mx-auto mt-4 max-w-3xl text-lg uppercase tracking-[0.2em] text-white/90">
+            ATENCIÓN PSIQUIÁTRICA PARA PERSONAS ADULTAS, VÍA TELEMEDICINA.
+          </p>
           <div className="mt-10">
             <a
               href="https://www.mipsiquiatra.cl/primera-cita/"
@@ -174,6 +174,9 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
           <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Quién soy?
           </h2>
+          <p className="mt-4 text-center text-sm uppercase tracking-[0.35em] text-[#b87333]">
+            Caminos Difíciles, Llevan a Lugares Hermosos
+          </p>
         </div>
         <div className="mx-auto mt-12 grid max-w-6xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
@@ -207,7 +210,6 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
               emocional y así encontremos las respuestas o soluciones que necesitan para sentirse plenos.
             </p>
             <p>El camino puede ser difícil, pero podemos llegar a un lugar mejor.</p>
-            <Image src={signatureImage} alt="Firma" width={250} height={106} className="h-20 w-auto" />
           </div>
         </div>
       </section>
@@ -345,7 +347,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
               {
                 step: "1",
                 title: "Decide hacer un cambio",
-                text: "Toma la decisión de comenzar un tratamiento. Caminos difíciles llevan a lugares hermosos.",
+                text: "Toma la decisión de comenzar un tratamiento.",
               },
               {
                 step: "2",

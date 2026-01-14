@@ -30,38 +30,52 @@ export async function POST(req: Request) {
   }
 
   const { subject, html } = buildBookingEmail(payload);
+  const adminEmail = "yasna@mipsiquiatra.cl";
+  const adminSubjectMap: Record<NotifyPayload["type"], string> = {
+    confirmation: "nueva cita",
+    cancelled: "cita cancelada",
+    rescheduled: "cita reprogramada",
+  };
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": brevoApiKey,
-      },
-      body: JSON.stringify({
-        sender: {
-          email: fromEmail,
-          name: fromName,
+    const sendEmail = async (to: string, emailSubject: string) => {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": brevoApiKey,
         },
-        to: [{ email: payload.to }],
-        subject,
-        htmlContent: html,
-      }),
-    });
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("notify: brevo send failed", {
-        status: response.status,
-        body: errorBody,
-        to: payload.to,
-        subject,
+        body: JSON.stringify({
+          sender: {
+            email: fromEmail,
+            name: fromName,
+          },
+          to: [{ email: to }],
+          subject: emailSubject,
+          htmlContent: html,
+        }),
       });
-      return NextResponse.json({ error: "Send failed" }, { status: 500 });
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("notify: brevo send failed", {
+          status: response.status,
+          body: errorBody,
+          to,
+          subject: emailSubject,
+        });
+        throw new Error("Send failed");
+      }
+      console.log("notify: brevo send ok", {
+        to,
+        subject: emailSubject,
+      });
+    };
+
+    if (payload.to !== adminEmail) {
+      await sendEmail(payload.to, subject);
     }
-    console.log("notify: brevo send ok", {
-      to: payload.to,
-      subject,
-    });
+
+    await sendEmail(adminEmail, adminSubjectMap[payload.type]);
   } catch (error) {
     console.error("notify: brevo send failed", {
       message: error instanceof Error ? error.message : String(error),

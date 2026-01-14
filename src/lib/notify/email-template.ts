@@ -23,7 +23,7 @@ export function buildBookingEmail(payload: NotifyPayload) {
   const formattedDate = formatDateTime(payload.start_at, timezone);
   const tenantName = payload.tenant_name ?? "Nuestro equipo";
   const serviceName = payload.service_name ?? "tu atención";
-  const customerName = payload.customer_name ?? "hola";
+  const greetingName = tenantName;
 
   const subjectMap: Record<NotifyPayload["type"], string> = {
     confirmation: "Reserva confirmada",
@@ -89,7 +89,7 @@ export function buildBookingEmail(payload: NotifyPayload) {
         </tr>
         <tr>
           <td style="padding:22px 34px 6px;font-family:Arial, sans-serif;color:#0f172a;">
-            <p style="margin:0 0 8px;font-size:15px;">Hola ${customerName},</p>
+            <p style="margin:0 0 8px;font-size:15px;">Hola ${greetingName},</p>
             ${payload.type !== "cancelled" ? `
               <p style="margin:0 0 16px;font-size:15px;color:#334155;">
                 Aca dejamos los detalles de tu cita:
