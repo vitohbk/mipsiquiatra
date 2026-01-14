@@ -19,6 +19,21 @@ const landingVariants: Record<string, LandingCopy> = {
     description: "Psiquiatra de adultos por videollamada en Chile. Agenda tu hora online.",
     heroTitle: "¿Buscas un Psiquiatra de Adultos?",
   },
+  "agendar-hora-psiquiatra": {
+    title: "Agendar hora de psiquiatra | Mi Psiquiatra",
+    description: "Agendar hora de psiquiatra por videollamada en Chile. Agenda tu hora online.",
+    heroTitle: "¿Buscas Agendar Hora de Psiquiatra?",
+  },
+  "videollamada-psiquiatra-online": {
+    title: "Videollamada con psiquiatra online | Mi Psiquiatra",
+    description: "Videollamada con psiquiatra online en Chile. Agenda tu hora online.",
+    heroTitle: "¿Buscas Videollamada con Psiquiatra Online?",
+  },
+  "ayuda-psiquiatra": {
+    title: "Ayuda de psiquiatra | Mi Psiquiatra",
+    description: "Ayuda de psiquiatra por videollamada en Chile. Agenda tu hora online.",
+    heroTitle: "¿Buscas Ayuda de Psiquiatra?",
+  },
 };
 
 const defaultDescription = "Psiquiatría clínica para adultos por videollamada en Chile.";
