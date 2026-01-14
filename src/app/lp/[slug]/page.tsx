@@ -37,7 +37,6 @@ const landingVariants: Record<string, LandingCopy> = {
 };
 
 const defaultDescription = "Psiquiatría clínica para adultos por videollamada en Chile.";
-const metadataBase = new URL("https://www.mipsiquiatra.cl");
 
 const toTitleCase = (value: string) =>
   value
@@ -57,12 +56,16 @@ const getLandingCopy = (slug: string): LandingCopy => {
   );
 };
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const copy = getLandingCopy(params.slug);
-  const canonicalUrl = new URL(`/lp/${params.slug}`, metadataBase);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const copy = getLandingCopy(slug);
+  const canonicalUrl = `https://www.mipsiquiatra.cl/lp/${slug}`;
 
   return {
-    metadataBase,
     title: copy.title,
     description: copy.description,
     alternates: {
@@ -76,8 +79,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function LandingPageBySlug({ params }: { params: { slug: string } }) {
-  const copy = getLandingCopy(params.slug);
+export default async function LandingPageBySlug({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const copy = getLandingCopy(slug);
 
   return <LandingPage heroTitle={copy.heroTitle} />;
 }
