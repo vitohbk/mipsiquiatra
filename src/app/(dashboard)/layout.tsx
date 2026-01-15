@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <aside className="flex flex-col gap-6 rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-4">
             <nav className="flex flex-col gap-2 text-sm uppercase tracking-[0.2em]">
               {navItem("/agenda/citas", "Citas")}
+              {navItem("/agenda/pagos", "Pagos")}
               {navItem("/agenda/services", "Servicios")}
               {navItem("/agenda/availability", "Disponibilidad")}
               {navItem("/agenda/patients", "Pacientes")}

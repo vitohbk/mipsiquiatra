@@ -18,7 +18,14 @@ type Booking = {
   patient_id: string | null;
   payment_id: string | null;
   payments?: { status: string | null } | null;
-  services?: { name: string; modality: string | null } | null;
+  services?: {
+    name: string;
+    modality: string | null;
+    price_clp?: number | null;
+    payment_mode?: string | null;
+    deposit_amount_clp?: number | null;
+    currency?: string | null;
+  } | null;
 };
 
 type PaymentStatusMap = Record<string, string>;
@@ -28,6 +35,10 @@ type Service = {
   name: string;
   duration_minutes: number;
   slug?: string | null;
+  price_clp?: number | null;
+  payment_mode?: string | null;
+  deposit_amount_clp?: number | null;
+  currency?: string | null;
 };
 
 type Patient = {
@@ -92,13 +103,16 @@ export default function BookingsPage() {
     public_token: string | null;
   } | null>(null);
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"future" | "past">("future");
 
   useEffect(() => {
     const load = async () => {
       if (!activeTenantId) return;
       const { data: bookingData, error: bookingError } = await supabase
         .from("bookings")
-        .select("id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality), payments(status)")
+        .select(
+          "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency), payments(status)",
+        )
         .eq("tenant_id", activeTenantId)
         .neq("status", "cancelled")
         .order("start_at", { ascending: true });
@@ -112,7 +126,7 @@ export default function BookingsPage() {
 
       const { data: serviceData } = await supabase
         .from("services")
-        .select("id, name, duration_minutes, slug")
+        .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency")
         .eq("tenant_id", activeTenantId);
 
       const { data: patientData } = await supabase
@@ -316,7 +330,8 @@ export default function BookingsPage() {
   };
 
   const isPaymentPaid = (booking: Booking) => {
-    const statusOverride = booking.payment_id ? paymentStatusMap[booking.payment_id] : undefined;
+    const paymentKey = booking.payment_id ?? booking.id;
+    const statusOverride = paymentStatusMap[paymentKey];
     const status = statusOverride ?? booking.payments?.status ?? "";
     return status === "paid";
   };
@@ -337,7 +352,13 @@ export default function BookingsPage() {
       hour12: false,
     }).format(new Date(iso));
 
-  const groupedBookings = bookings.reduce((acc, booking) => {
+  const todayKey = toTenantDateKey(new Date().toISOString());
+  const filteredBookings = bookings.filter((booking) => {
+    const dateKey = toTenantDateKey(booking.start_at);
+    return activeTab === "past" ? dateKey < todayKey : dateKey >= todayKey;
+  });
+
+  const groupedBookings = filteredBookings.reduce((acc, booking) => {
     const dateKey = toTenantDateKey(booking.start_at);
     const existing = acc.get(dateKey);
     if (existing) {
@@ -471,22 +492,98 @@ export default function BookingsPage() {
     }
   };
 
-  const handleMarkPaid = async (paymentId: string | null) => {
-    if (!paymentId) return;
-    const previousStatus = paymentStatusMap[paymentId] ?? "";
+  const handleMarkPaid = async (booking: Booking) => {
+    const paymentKey = booking.payment_id ?? booking.id;
+    const previousStatus = paymentStatusMap[paymentKey] ?? "";
     setError(null);
-    setMarkingPaidId(paymentId);
-    setPaymentStatusMap((current) => ({ ...current, [paymentId]: "paid" }));
-    const { error: updateError } = await (supabase
-      .from("payments") as any)
-      .update({ status: "paid" })
-      .eq("id", paymentId);
-    if (updateError) {
-      setError(updateError.message);
-      setPaymentStatusMap((current) => ({ ...current, [paymentId]: previousStatus }));
+    setMarkingPaidId(paymentKey);
+    setPaymentStatusMap((current) => ({ ...current, [paymentKey]: "paid" }));
+
+    if (booking.payment_id) {
+      const { error: updateError } = await (supabase
+        .from("payments") as any)
+        .update({ status: "paid" })
+        .eq("id", booking.payment_id);
+      if (updateError) {
+        setError(updateError.message);
+        setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+        setMarkingPaidId(null);
+        return;
+      }
       setMarkingPaidId(null);
       return;
     }
+
+    const service = booking.services;
+    if (!service || !activeTenantId) {
+      setError("La cita no tiene servicio o tenant asociado.");
+      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+      setMarkingPaidId(null);
+      return;
+    }
+
+    const amount = service.payment_mode === "deposit"
+      ? (service.deposit_amount_clp ?? service.price_clp ?? 0)
+      : (service.price_clp ?? 0);
+
+    if (!amount) {
+      setError("No se pudo calcular el monto.");
+      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+      setMarkingPaidId(null);
+      return;
+    }
+
+    const paymentInsert = await (supabase
+      .from("payments") as any)
+      .insert({
+        tenant_id: activeTenantId,
+        provider: "mercadopago",
+        idempotency_key: crypto.randomUUID(),
+        amount_clp: amount,
+        currency: service.currency ?? "CLP",
+        status: "paid",
+        paid_at: new Date().toISOString(),
+        raw_response: { manual: true, booking_id: booking.id },
+      })
+      .select("id")
+      .single();
+
+    if (paymentInsert.error || !paymentInsert.data) {
+      setError(paymentInsert.error?.message ?? "No se pudo crear el pago.");
+      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+      setMarkingPaidId(null);
+      return;
+    }
+
+    const { error: bookingUpdateError } = await (supabase
+      .from("bookings") as any)
+      .update({ payment_id: paymentInsert.data.id })
+      .eq("id", booking.id);
+
+    if (bookingUpdateError) {
+      setError(bookingUpdateError.message);
+      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+      setMarkingPaidId(null);
+      return;
+    }
+
+    setPaymentStatusMap((current) => {
+      const next = { ...current };
+      delete next[paymentKey];
+      next[paymentInsert.data.id] = "paid";
+      return next;
+    });
+    setBookings((current) =>
+      current.map((item) =>
+        item.id === booking.id
+          ? {
+              ...item,
+              payment_id: paymentInsert.data.id,
+              payments: { status: "paid" },
+            }
+          : item,
+      ),
+    );
     setMarkingPaidId(null);
   };
 
@@ -511,6 +608,7 @@ export default function BookingsPage() {
             booking_id: cancelledBooking.id,
             customer_email: cancelledBooking.customer_email,
             type: "cancelled",
+            source: "admin",
           },
           { disableAuth: true },
         );
@@ -523,6 +621,8 @@ export default function BookingsPage() {
     setSavingEdit(false);
   };
 
+  const pillTone = activeTab === "past" ? "opacity-60" : "";
+
   return (
     <section className="space-y-8">
       <div className="space-y-2">
@@ -532,8 +632,33 @@ export default function BookingsPage() {
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className={`rounded-full px-4 py-2 text-xs uppercase tracking-[0.2em] transition ${
+            activeTab === "future"
+              ? "bg-[var(--panel-soft)] font-semibold text-[var(--brand-ink)]"
+              : "text-[var(--brand-copper)] hover:bg-[var(--panel-soft)]"
+          }`}
+          onClick={() => setActiveTab("future")}
+        >
+          Citas futuras
+        </button>
+        <button
+          type="button"
+          className={`rounded-full px-4 py-2 text-xs uppercase tracking-[0.2em] transition ${
+            activeTab === "past"
+              ? "bg-[var(--panel-soft)] font-semibold text-[var(--brand-ink)]"
+              : "text-[var(--brand-copper)] hover:bg-[var(--panel-soft)]"
+          }`}
+          onClick={() => setActiveTab("past")}
+        >
+          Citas pasadas
+        </button>
+      </div>
+
       <div className="space-y-3">
-        {bookings.length === 0 ? (
+        {filteredBookings.length === 0 ? (
           <p className="text-sm text-[var(--panel-muted)]">Sin citas aun.</p>
         ) : (
           <div className="space-y-3">
@@ -558,7 +683,7 @@ export default function BookingsPage() {
                             <div
                               className={`rounded-xl px-4 py-2 text-base font-semibold ${servicePillStyle(
                                 booking.services?.name,
-                              )}`}
+                              )} ${pillTone}`}
                             >
                               {formatTenantTime(booking.start_at)}
                             </div>
@@ -569,7 +694,7 @@ export default function BookingsPage() {
                               <span
                                 className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs ${servicePillStyle(
                                   booking.services?.name,
-                                )}`}
+                                )} ${pillTone}`}
                               >
                                 {booking.services?.name ?? "Servicio sin nombre"}
                               </span>
@@ -579,10 +704,12 @@ export default function BookingsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="ml-auto flex items-center gap-1">
+                        <div className="ml-auto flex items-center gap-2">
                           <button
-                            className={`inline-flex items-center justify-center p-2 transition hover:text-[var(--page-text)] ${
-                              isPaid ? "text-emerald-500" : "text-[var(--panel-muted)]"
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition ${
+                              isPaid
+                                ? "border-emerald-200 text-emerald-600"
+                                : "border-[var(--panel-border)] text-[var(--panel-muted)] hover:text-[var(--page-text)]"
                             }`}
                             type="button"
                             onClick={() => handleMarkPaid(booking.payment_id)}
@@ -590,23 +717,12 @@ export default function BookingsPage() {
                             aria-label={isPaid ? "Pagado" : "Marcar como pagado"}
                             title={isPaid ? "Pagado" : "Marcar como pagado"}
                           >
-                            <svg
-                              viewBox="144 144 512 512"
-                              aria-hidden="true"
-                              className="h-5 w-5"
-                              fill="currentColor"
-                            >
-                              <g>
-                                <path d="m376.38 360.64c-8.6836 0-15.742-7.0625-15.742-15.742 0-8.6836 7.0625-15.742 15.742-15.742h31.488c8.6914 0 15.742-7.0547 15.742-15.742 0-8.6914-7.0547-15.742-15.742-15.742h-15.742c0-8.6914-7.0547-15.742-15.742-15.742-8.6914 0-15.742 7.0547-15.742 15.742v2.7539c-18.316 6.5039-31.488 23.953-31.488 44.477 0 26.047 21.184 47.23 47.23 47.23 8.6836 0 15.742 7.0625 15.742 15.742 0 8.6836-7.0625 15.742-15.742 15.742h-31.488c-8.6914 0-15.742 7.0547-15.742 15.742 0 8.6914 7.0547 15.742 15.742 15.742h15.742c0 8.6914 7.0547 15.742 15.742 15.742 8.6914 0 15.742-7.0547 15.742-15.742v-2.7539c18.309-6.5117 31.488-23.961 31.488-44.477 0-26.047-21.184-47.23-47.23-47.23z" />
-                                <path d="m542.55 473.49c-7.2422-4.832-17.012-2.8672-21.828 4.3672l-20.828 31.25-2.1641-2.1562c-6.1484-6.1484-16.113-6.1484-22.262 0-6.1484 6.1484-6.1484 16.113 0 22.262l15.742 15.742c2.957 2.9648 6.9727 4.6094 11.121 4.6094.51172 0 1.0312-.023437 1.5508-.078125 4.6914-.46484 8.9336-3.0078 11.547-6.9336l31.488-47.23c4.8164-7.2383 2.8672-17.016-4.3672-21.832z" />
-                                <path d="m541.2 429.44c5.5039-17.074 8.3672-34.844 8.3672-53.059 0-95.496-77.688-173.18-173.18-173.18-95.496 0-173.18 77.688-173.18 173.18 0 95.496 77.688 173.18 173.18 173.18 18.238 0 36.023-2.7852 53.09-8.2969 12.523 32.426 43.949 55.531 80.734 55.531 47.742 0 86.594-38.848 86.594-86.594 0-36.816-23.137-68.258-55.602-80.766zm-306.51-53.059c0-78.129 63.566-141.7 141.7-141.7 78.129 0 141.7 63.566 141.7 141.7 0 16.297-2.875 32.117-8.2422 47.246-47.453.20312-86.02 38.762-86.207 86.223-15.113 5.3711-30.938 8.2266-47.246 8.2266-78.129 0-141.7-63.566-141.7-141.7zm275.52 188.93c-30.379 0-55.105-24.727-55.105-55.105 0-30.379 24.727-55.105 55.105-55.105 30.379 0 55.105 24.727 55.105 55.105 0 30.379-24.727 55.105-55.105 55.105z" />
-                              </g>
-                            </svg>
+                            P
                           </button>
-                          {canManageBookings ? (
-                            <div className="flex flex-row items-center gap-1">
+                          {canManageBookings && activeTab === "future" ? (
+                            <>
                               <button
-                                className="px-2 py-2 text-[var(--panel-muted)] transition hover:text-[var(--page-text)]"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--panel-border)] text-xs font-semibold text-[var(--panel-muted)] transition hover:text-[var(--page-text)]"
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
@@ -614,21 +730,12 @@ export default function BookingsPage() {
                                 }}
                                 disabled={savingEdit}
                                 aria-label="Cancelar"
+                                title="Cancelar"
                               >
-                                <svg
-                                  viewBox="144 144 512 512"
-                                  aria-hidden="true"
-                                  className="h-4 w-4"
-                                  fill="currentColor"
-                                >
-                                  <g>
-                                    <path d="m588.93 232.06h-41.984v-20.992c0-7.5-4-14.43-10.496-18.18-6.4922-3.75-14.496-3.75-20.992 0-6.4922 3.75-10.496 10.68-10.496 18.18v20.992h-209.92v-20.992c0-7.5-4-14.43-10.496-18.18-6.4961-3.75-14.496-3.75-20.992 0-6.4961 3.75-10.496 10.68-10.496 18.18v20.992h-41.984c-5.5664 0-10.906 2.2109-14.844 6.1484s-6.1484 9.2773-6.1484 14.844v335.87c0 5.5703 2.2109 10.906 6.1484 14.844s9.2773 6.1484 14.844 6.1484h377.86c5.5703 0 10.906-2.2109 14.844-6.1484s6.1484-9.2734 6.1484-14.844v-335.87c0-5.5664-2.2109-10.906-6.1484-14.844s-9.2734-6.1484-14.844-6.1484zm-20.992 335.87h-335.87V358.01h335.87zm0-251.9h-335.87v-41.984h335.87z" />
-                                    <path d="m343.11 519.86c3.9414 3.9727 9.3086 6.2109 14.906 6.2109s10.961-2.2383 14.902-6.2109L4e2 492.571l27.078 27.289c3.9414 3.9727 9.3086 6.2109 14.906 6.2109 5.5938 0 10.961-2.2383 14.902-6.2109 3.9727-3.9414 6.2109-9.3086 6.2109-14.906 0-5.5938-2.2383-10.961-6.2109-14.902l-27.289-27.078 27.289-27.078v-0.003907c5.3242-5.3242 7.4062-13.086 5.457-20.359-1.9492-7.2734-7.6328-12.957-14.906-14.906-7.2734-1.9453-15.035 0.13281-20.359 5.457l-27.078 27.289-27.078-27.289h-0.003906c-5.3242-5.3242-13.086-7.4023-20.359-5.457-7.2734 1.9492-12.953 7.6328-14.902 14.906-1.9492 7.2734 0.12891 15.035 5.4531 20.359l27.289 27.082-27.289 27.078c-3.9727 3.9414-6.207 9.3086-6.207 14.902 0 5.5977 2.2344 10.965 6.207 14.906z" />
-                                  </g>
-                                </svg>
+                                C
                               </button>
                               <button
-                                className="px-2 py-2 text-[var(--panel-muted)] transition hover:text-[var(--page-text)]"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--panel-border)] text-xs font-semibold text-[var(--panel-muted)] transition hover:text-[var(--page-text)]"
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
@@ -636,20 +743,11 @@ export default function BookingsPage() {
                                 }}
                                 disabled={savingEdit}
                                 aria-label="Reprogramar"
+                                title="Reprogramar"
                               >
-                                <svg
-                                  viewBox="144 144 512 512"
-                                  aria-hidden="true"
-                                  className="h-4 w-4"
-                                  fill="currentColor"
-                                >
-                                  <g>
-                                    <path d="m500.76 490.68h-30.23c-7.1992 0-13.852 3.8398-17.453 10.078-3.5977 6.2344-3.5977 13.914 0 20.152 3.6016 6.2344 10.254 10.074 17.453 10.074h30.23c16.031 0 31.41-6.3672 42.75-17.707 11.336-11.336 17.707-26.715 17.707-42.75v-171.29c0-16.035-6.3711-31.414-17.707-42.75-11.34-11.34-26.719-17.707-42.75-17.707H339.54c-16.035 0-31.414 6.3672-42.75 17.707-11.34 11.336-17.707 26.715-17.707 42.75v60.457c0 7.1992 3.8398 13.852 10.074 17.449 6.2344 3.6016 13.918 3.6016 20.152 0 6.2344-3.5977 10.078-10.25 10.078-17.449v-60.457c0-5.3477 2.1211-10.473 5.9023-14.25 3.7773-3.7812 8.9023-5.9023 14.25-5.9023h60.457v40.305c0 7.1992 3.8398 13.852 10.074 17.449 6.2344 3.6016 13.918 3.6016 20.152 0 6.2344-3.5977 10.078-10.25 10.078-17.449v-40.305h60.457c5.3438 0 10.469 2.1211 14.25 5.9023 3.7773 3.7773 5.9023 8.9023 5.9023 14.25v171.29c0 5.3438-2.125 10.473-5.9023 14.25-3.7812 3.7812-8.9062 5.9023-14.25 5.9023z" />
-                                    <path d="m365.49 504.84c3.7773 3.7852 8.9102 5.9102 14.258 5.9102s10.477-2.125 14.258-5.9102l41.262-40.707c6.3672-6.293 9.9531-14.875 9.9531-23.828 0-8.957-3.5859-17.539-9.9531-23.832l-41.465-40.91c-5.1289-5.0547-12.566-6.9922-19.512-5.0781-6.9453 1.9102-12.344 7.3867-14.156 14.355-1.8164 6.9727 0.22656 14.383 5.3555 19.441l16.324 15.871h-70.535c-18.348-0.19922-36.074 6.625-49.551 19.074-13.48 12.445-21.688 29.578-22.945 47.879-0.98438 19.32 6.0117 38.195 19.348 52.207 13.336 14.012 31.84 21.93 51.184 21.906h20.152c7.1992 0 13.852-3.8438 17.453-10.078 3.5977-6.2344 3.5977-13.918 0-20.152-3.6016-6.2344-10.254-10.074-17.453-10.074h-20.152c-8.7109 0.003907-17.004-3.7539-22.746-10.309-5.7422-6.5508-8.3789-15.266-7.2305-23.902 1.1328-7.3828 4.8984-14.109 10.602-18.938 5.7031-4.8242 12.961-7.4219 20.434-7.3086h71.441l-16.121 15.871-0.003906-0.003906c-3.8086 3.7539-5.9727 8.8672-6.0117 14.219-0.035156 5.3477 2.0547 10.492 5.8125 14.297z" />
-                                  </g>
-                                </svg>
+                                R
                               </button>
-                            </div>
+                            </>
                           ) : null}
                         </div>
                       </div>
@@ -738,6 +836,7 @@ export default function BookingsPage() {
                                     booking_id: editingBookingId,
                                     customer_email: patient.email ?? "",
                                     type: "rescheduled",
+                                    source: "admin",
                                   },
                                   { disableAuth: true },
                                 );
@@ -929,6 +1028,7 @@ export default function BookingsPage() {
                         booking_id: insertedBooking.id,
                         customer_email: patient.email,
                         type: "confirmation",
+                        source: "admin",
                       },
                       { disableAuth: true },
                     );

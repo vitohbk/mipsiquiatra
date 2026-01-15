@@ -69,32 +69,32 @@ const testimonials = [
   {
     quote:
       "La Dra. Yañez es una muy buena profesional, empática, y maneja muy bien los conocimientos de su área de psiquiatría.",
-    name: "Sebastián Perry",
+    name: "S. P. (anonimizado)",
   },
   {
     quote:
-      "Como profesional es excelente con sus consejos, sus tratamientos y las tareas que me ha asignado, ha cambiado mi vida.",
-    name: "Graciela Sánchez",
+      "Como profesional es excelente con sus consejos, sus tratamientos y las tareas que me ha asignado. Me sentí escuchada y acompañada durante el proceso.",
+    name: "G. S. (anonimizado)",
   },
   {
     quote:
       "La experiencia de atención es muy buena. He estado con psiquiatras antes y sólo se enfocaban en la entrega de medicamentos.",
-    name: "Suely López",
+    name: "S. L. (anonimizado)",
   },
   {
     quote:
-      "Por primera vez fui escuchada, comprendida y acogida. Gracias a su atención, logré estar bien y sentirme yo de nuevo.",
-    name: "Arelis Vidal",
+      "Por primera vez fui escuchada, comprendida y acogida. Fue un espacio profesional donde pude hablar con confianza.",
+    name: "A. V. (anonimizado)",
   },
   {
     quote:
-      "Íntegra, empática, acogedora y preocupada por el avance del paciente. Genera las condiciones para sentirse cómoda.",
-    name: "Maritza Santibáñez",
+      "Íntegra, empática y acogedora. Genera un espacio profesional y respetuoso. Genera las condiciones para sentirse cómoda.",
+    name: "M. S. (anonimizado)",
   },
   {
     quote:
       "Me he atendido por unos 4 meses. Primera vez que me siento tan escuchada y comprendida con un profesional de salud mental.",
-    name: "Marilyn Fernández",
+    name: "M. F. (anonimizado)",
   },
 ];
 
@@ -105,7 +105,7 @@ type LandingPageProps = {
 export default function LandingPage({ heroTitle }: LandingPageProps) {
   return (
     <main className="font-[var(--font-source-sans)] text-[#3a3a3a]">
-      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur">
+      <header className="border-b border-black/5 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <Image src={logoImage} alt="Mi Psiquiatra" width={56} height={56} className="h-14 w-14 object-contain" />
@@ -174,9 +174,6 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
           <h2 className="text-center" style={{ fontSize: "4rem" }}>
             ¿Quién soy?
           </h2>
-          <p className="mt-4 text-center text-sm uppercase tracking-[0.35em] text-[#b87333]">
-            Caminos Difíciles, Llevan a Lugares Hermosos
-          </p>
         </div>
         <div className="mx-auto mt-12 grid max-w-6xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
@@ -192,24 +189,11 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
             <h3 className="font-[var(--font-playfair)] text-3xl text-[#2f2f2f]">
               Mi nombre es Mariela Yañez
             </h3>
-            <p>
-              Soy <strong>Médico Cirujano</strong> de la Universidad de Chile y Especialista en{" "}
-              <strong>Psiquiatría de Adultos</strong> de la Universidad de Santiago de Chile. Me he
-              dedicado a subespecializarme en trauma, siendo actualmente <strong>Terapeuta EMDR</strong>.
-            </p>
-            <p>
-              Escogí ser Psiquiatra porque considero a la mente un mundo fascinante y si logras
-              mantenerte saludable mental y emocionalmente, tu vida puede cambiar de manera maravillosa.
-            </p>
-            <p>
-              Por eso estoy convencida de que si quieres lograr un bienestar pleno debes poner tu salud
-              mental en primer lugar. Es el primer eslabón para conseguir sentirte feliz.
-            </p>
-            <p>
-              En mi consulta, quiero que mis pacientes se sientan cómodos para abrirme su mundo
-              emocional y así encontremos las respuestas o soluciones que necesitan para sentirse plenos.
-            </p>
-            <p>El camino puede ser difícil, pero podemos llegar a un lugar mejor.</p>
+              <p><strong>Soy médico cirujano de la Universidad de Chile y psiquiatra de adultos de la Universidad de Santiago, terapeuta EMDR y más de 10 años de experiencia.</strong></p>
+              <p>Entiendo la consulta psiquiátrica como un espacio de escucha, evaluación y acompañamiento profesional, en el que es posible conversar con tranquilidad sobre las dificultades que motivan la consulta.</p>
+              <p>La atención se construye de manera individual, respetando los tiempos y necesidades de cada persona, y considerando un abordaje clínico acorde a su situación particular.</p>
+              <p>El objetivo de este espacio es ofrecer orientación y seguimiento en un marco de cuidado, respeto y confidencialidad.</p>
+              <p><em>Si estás buscando orientación profesional en salud mental, puedes agendar una consulta</em></p>
           </div>
         </div>
       </section>
@@ -220,8 +204,8 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
             Testimonios
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[#4b4f58]">
-            Siempre busco que los pacientes logren sentirse cómodos para contarme sus dolencias
-            emocionales y, así, poder contribuir a aliviarlos.
+            Siempre busco que los pacientes se sientan cómodos para contarme sus experiencias 
+            y dificultades emocionales, en un espacio profesional y respetuoso.
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {testimonials.map((item) => (
@@ -232,12 +216,6 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
               </div>
             ))}
           </div>
-          <a
-            href="#testimonios"
-            className="mt-10 inline-flex items-center text-sm uppercase tracking-[0.25em] text-[#b87333] hover:text-[#39cec9]"
-          >
-            Ver más testimonios
-          </a>
         </div>
       </section>
 
@@ -288,12 +266,12 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
               <div className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
                 <p className="step-number">1.</p>
                 <h3 className="mt-4 font-[var(--font-playfair)] text-2xl text-[#2f2f2f]">
-                  Primera entrevista
+                  Primera Cita
                 </h3>
                 <p className="mt-4 text-[#4b4f58]">
                   Aquí me interesa conocerte y que conformemos una alianza de trabajo para encontrar
                   qué te aqueja y construir un diagnóstico inicial. Aunque muchas veces no es posible un
-                  diagnóstico definitivo en la primera entrevista, sí me permitirá proponerte un plan de
+                  diagnóstico definitivo en la primera cita, sí me permitirá proponerte un plan de
                   acción para aliviar tus síntomas.
                 </p>
               </div>
@@ -303,7 +281,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
                   Control psiquiátrico
                 </h3>
                 <p className="mt-4 text-[#4b4f58]">
-                  Se trata de las evaluaciones que siguen a la primera entrevista. Su objetivo es
+                  Se trata de las evaluaciones que siguen a la primera cita. Su objetivo es
                   observar tu evolución, afinar diagnósticos y medir la respuesta al tratamiento. En
                   esta etapa busco tener una mirada crítica y flexible para adaptarme a tus necesidades.
                 </p>
@@ -319,8 +297,8 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
             ¿Dónde nos reuniremos?
           </h2>
           <p className="mx-auto mt-4 max-w-3xl text-center text-lg text-[#4b4f58]">
-            Actualmente todas las atenciones serán por telemedicina. Nuestras reuniones serán a través
-            de Zoom o una videollamada de WhatsApp, según preferencia del paciente.
+            Actualmente todas las atenciones serán por telemedicina. Nuestras reuniones se realizan 
+            por videollamada, principalmente a través de Zoom, según preferencia del paciente.
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {placeImages.map((src, index) => (
@@ -340,14 +318,14 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
       <section id="como-comenzar" className="bg-[#f9fafb] py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center" style={{ fontSize: "4rem" }}>
-            ¿Cómo comenzar a sanar?
+            ¿Cómo comenzar el proceso de atención?
           </h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {[
               {
                 step: "1",
                 title: "Decide hacer un cambio",
-                text: "Toma la decisión de comenzar un tratamiento.",
+                text: "Toma la decisión de solicitar una consulta profesional.",
               },
               {
                 step: "2",
@@ -380,7 +358,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-3xl border border-[#f0e4d6] bg-[#fffdf9] p-8 text-center">
               <p className="price-number">$85.000</p>
-              <p className="mt-2 text-[#4b4f58]">Primera entrevista</p>
+              <p className="mt-2 text-[#4b4f58]">Primera Cita</p>
             </div>
             <div className="rounded-3xl border border-[#f0e4d6] bg-[#fffdf9] p-8 text-center">
               <p className="price-number">$65.000</p>

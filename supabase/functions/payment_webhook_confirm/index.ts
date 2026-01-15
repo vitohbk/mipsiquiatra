@@ -195,6 +195,7 @@ serve(async (req) => {
             body: JSON.stringify({
               booking_id: bookingInsert.data.id,
               customer_email: lockResult.data.customer_email,
+              source: "public",
             }),
           });
         } catch (_error) {

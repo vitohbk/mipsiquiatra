@@ -148,6 +148,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               type: "rescheduled",
+              source: "public",
               to: recipient,
               customer_name: bookingDetails?.customer_name ?? null,
               service_name: bookingDetails?.services?.name ?? null,

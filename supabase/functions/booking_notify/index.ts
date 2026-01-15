@@ -54,6 +54,7 @@ serve(async (req) => {
     const bookingId = payload.booking_id?.toString();
     const customerEmail = payload.customer_email?.toString();
     const type = (payload.type ?? "confirmation") as "confirmation" | "cancelled" | "rescheduled";
+    const source = (payload.source ?? "public") as "public" | "admin";
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "booking_id required" }), {
@@ -122,6 +123,7 @@ serve(async (req) => {
         timezone,
         cancel_url: cancelToken ? `${publicSiteUrl}/booking/${cancelToken}/cancelar` : null,
         reschedule_url: rescheduleToken ? `${publicSiteUrl}/booking/${rescheduleToken}/reprogramar` : null,
+        source,
       }),
     });
 

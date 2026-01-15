@@ -1,5 +1,6 @@
 export type NotifyPayload = {
   type: "confirmation" | "cancelled" | "rescheduled";
+  source?: "public" | "admin";
   to: string;
   customer_name?: string | null;
   service_name?: string | null;
@@ -24,21 +25,24 @@ export function buildBookingEmail(payload: NotifyPayload) {
   const tenantName = payload.tenant_name ?? "Nuestro equipo";
   const serviceName = payload.service_name ?? "tu atención";
   const greetingName = tenantName;
+  const isAdminBooking = payload.source === "admin";
 
   const subjectMap: Record<NotifyPayload["type"], string> = {
-    confirmation: "Reserva confirmada",
-    cancelled: "Reserva cancelada",
-    rescheduled: "Reserva reprogramada",
+    confirmation: isAdminBooking ? "Cita agendada por nuestro equipo" : "Cita confirmada",
+    cancelled: "Cita cancelada",
+    rescheduled: "Cita reprogramada",
   };
   const titleMap: Record<NotifyPayload["type"], string> = {
-    confirmation: "Reserva confirmada",
-    cancelled: "Reserva cancelada",
-    rescheduled: "Reserva reprogramada",
+    confirmation: isAdminBooking ? "Cita agendada" : "Cita confirmada",
+    cancelled: "Cita cancelada",
+    rescheduled: "Cita reprogramada",
   };
   const bodyTextMap: Record<NotifyPayload["type"], string> = {
-    confirmation: `Tu reserva para ${serviceName} quedó confirmada.`,
-    cancelled: `Tu reserva para ${serviceName} fue cancelada.`,
-    rescheduled: `Tu reserva para ${serviceName} fue reprogramada.`,
+    confirmation: isAdminBooking
+      ? `Tu cita para ${serviceName} fue agendada por nuestro equipo.`
+      : `Tu cita para ${serviceName} quedó confirmada.`,
+    cancelled: `Tu cita para ${serviceName} fue cancelada.`,
+    rescheduled: `Tu cita para ${serviceName} fue reprogramada.`,
   };
 
   const subject = subjectMap[payload.type];
@@ -111,8 +115,11 @@ export function buildBookingEmail(payload: NotifyPayload) {
             </table>
             ${payload.type !== "cancelled" ? `
               <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#0f766e;">
-                <strong>IMPORTANTE:</strong> Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion.
-                Su numero es el <a href="https://wa.me/56968051535" style="color:#0f766e;text-decoration:underline;">+56968051535</a>.
+                <strong>IMPORTANTE:</strong> ${
+                  payload.type === "rescheduled" || isAdminBooking
+                    ? "Recordamos que para confirmar esta cita debe enviar el pago antes de las 14:00 hras del día hábil anterior. De lo contrario esta cita será cancelada.<br /><br />Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion. Su numero es el +56968051535."
+                    : "Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion. Su numero es el <a href=\"https://wa.me/56968051535\" style=\"color:#0f766e;text-decoration:underline;\">+56968051535</a>."
+                }
               </p>
             ` : ""}
           </td>

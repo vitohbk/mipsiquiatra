@@ -16,6 +16,7 @@ type MpPayment = {
   metadata?: {
     payment_id?: string;
     lock_token?: string;
+    booking_id?: string;
   };
 };
 
@@ -100,8 +101,35 @@ serve(async (req) => {
     }
 
     const lockToken = mpPayment.metadata?.lock_token ?? payment.raw_response?.lock_token ?? null;
+    const bookingId = mpPayment.metadata?.booking_id ?? payment.raw_response?.booking_id ?? null;
 
     if (mpPayment.status === "approved") {
+      if (bookingId) {
+        const { error: bookingUpdateError } = await admin
+          .from("bookings")
+          .update({ payment_id: payment.id })
+          .eq("id", bookingId);
+
+        if (bookingUpdateError) {
+          return new Response(JSON.stringify({ error: bookingUpdateError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        await admin.from("payments").update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          provider_reference: String(mpPayment.id),
+          raw_response: mpPayment,
+        }).eq("id", payment.id);
+
+        return new Response(JSON.stringify({ status: "ok", booking_id: bookingId }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (!lockToken) {
         return new Response(JSON.stringify({ error: "Missing lock_token" }), {
           status: 400,
@@ -169,6 +197,7 @@ serve(async (req) => {
             body: JSON.stringify({
               booking_id: bookingInsert.data.id,
               customer_email: lockResult.data.customer_email,
+              source: "public",
             }),
           });
         } catch (_error) {
