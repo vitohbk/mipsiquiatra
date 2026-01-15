@@ -73,7 +73,7 @@ const testimonials = [
   },
   {
     quote:
-      "Como profesional es excelente con sus consejos, sus tratamientos y las tareas que me ha asignado. Me sentí escuchada y acompañada durante el proceso.",
+      "Como profesional es excelente con sus consejos, su orientación y las tareas que me ha asignado. Me sentí escuchada y acompañada durante la consulta.",
     name: "G. S. (anonimizado)",
   },
   {
@@ -93,18 +93,20 @@ const testimonials = [
   },
   {
     quote:
-      "Me he atendido por unos 4 meses. Primera vez que me siento tan escuchada y comprendida con un profesional de salud mental.",
+      "Primera vez que me siento tan escuchada y comprendida con un profesional de salud mental.",
     name: "M. F. (anonimizado)",
   },
 ];
 
 type LandingPageProps = {
   heroTitle: string;
+  hideHeader?: boolean;
 };
 
-export default function LandingPage({ heroTitle }: LandingPageProps) {
+export default function LandingPage({ heroTitle, hideHeader = false }: LandingPageProps) {
   return (
     <main className="font-[var(--font-source-sans)] text-[#3a3a3a]">
+      {!hideHeader && (
       <header className="border-b border-black/5 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
@@ -143,6 +145,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
           </details>
         </div>
       </header>
+      )}
 
       <section
         id="hero"
@@ -163,7 +166,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
               href="https://www.mipsiquiatra.cl/primera-cita/"
               className="inline-flex items-center rounded-full bg-[#39cec9] px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
             >
-              Agendar una hora
+              Agendar una Cita
             </a>
           </div>
         </div>
@@ -225,7 +228,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
             Mis servicios
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[#4b4f58]">
-            Mi experiencia laboral y estudios me permiten ayudarte con los siguientes problemas.
+            Mi experiencia laboral y estudios se orientan a la atención de personas adultas con dificultades como:a
           </p>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
             {services.map((column, index) => (
@@ -272,7 +275,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
                   Aquí me interesa conocerte y que conformemos una alianza de trabajo para encontrar
                   qué te aqueja y construir un diagnóstico inicial. Aunque muchas veces no es posible un
                   diagnóstico definitivo en la primera cita, sí me permitirá proponerte un plan de
-                  acción para aliviar tus síntomas.
+                  atención y seguimiento clínico acorde a tu situación.
                 </p>
               </div>
               <div className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
@@ -282,7 +285,7 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
                 </h3>
                 <p className="mt-4 text-[#4b4f58]">
                   Se trata de las evaluaciones que siguen a la primera cita. Su objetivo es
-                  observar tu evolución, afinar diagnósticos y medir la respuesta al tratamiento. En
+                  observar tu evolución, afinar diagnósticos y revisar la evolución clínica y ajustar el plan de atención cuando corresponda. En
                   esta etapa busco tener una mirada crítica y flexible para adaptarme a tus necesidades.
                 </p>
               </div>
@@ -398,19 +401,38 @@ export default function LandingPage({ heroTitle }: LandingPageProps) {
       >
         <div className="text-center text-white">
           <h2 className="text-center" style={{ fontSize: "4rem" }}>
-            ¿Ya quieres comenzar?
+            ¿Quieres agendar una cita?
           </h2>
           <a
             href="https://www.mipsiquiatra.cl/primera-cita/"
             className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#39cec9] px-8 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black shadow-lg transition hover:translate-y-0.5"
           >
-            Agendar una hora
+            Agendar una Cita
           </a>
         </div>
       </section>
 
-      <footer className="bg-white py-10 text-center text-xs uppercase tracking-[0.3em] text-[#b87333]">
-        Mi Psiquiatra · Servicios de Psiquiatría Clínica
+      <footer className="bg-[#2f2f2f] py-10 text-center text-sm leading-relaxed text-white/80">
+        <p className="font-semibold text-white">Mi Psiquiatra</p>
+        <p className="mt-2">Dra. Mariela Yañez · Médico cirujano · Psiquiatría clínica para adultos · Especialista EMDR</p>
+        <p className="mt-1">Atención por telemedicina (videollamada) · Chile</p>
+        <div className="mx-auto mt-6 max-w-xl rounded-lg bg-red-900/40 px-6 py-4">
+          <p className="text-xs font-medium text-white">
+            Este sitio no corresponde a un servicio de urgencias.
+          </p>
+          <p className="mt-1 text-xs text-white/80">
+            Si estás en una situación de crisis, busca atención presencial inmediata en un servicio de urgencia.
+            Puedes consultar información en{" "}
+            <a
+              href="https://psiquiatrico.cl/urgencias/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              psiquiatrico.cl/urgencias
+            </a>
+          </p>
+        </div>
       </footer>
     </main>
   );

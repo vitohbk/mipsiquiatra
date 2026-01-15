@@ -83,5 +83,5 @@ export default async function LandingPageBySlug({ params }: { params: Promise<{ 
   const { slug } = await params;
   const copy = getLandingCopy(slug);
 
-  return <LandingPage heroTitle={copy.heroTitle} />;
+  return <LandingPage heroTitle={copy.heroTitle} hideHeader />;
 }
