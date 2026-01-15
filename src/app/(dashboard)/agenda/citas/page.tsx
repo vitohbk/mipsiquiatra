@@ -712,7 +712,7 @@ export default function BookingsPage() {
                                 : "border-[var(--panel-border)] text-[var(--panel-muted)] hover:text-[var(--page-text)]"
                             }`}
                             type="button"
-                            onClick={() => handleMarkPaid(booking.payment_id)}
+                            onClick={() => handleMarkPaid(booking)}
                             disabled={!booking.payment_id || markingPaidId === booking.payment_id}
                             aria-label={isPaid ? "Pagado" : "Marcar como pagado"}
                             title={isPaid ? "Pagado" : "Marcar como pagado"}
