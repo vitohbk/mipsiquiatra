@@ -228,7 +228,7 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
             Mis servicios
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-[#4b4f58]">
-            Mi experiencia laboral y estudios se orientan a la atención de personas adultas con dificultades como:a
+            Mi experiencia laboral y estudios se orientan a la atención de personas adultas con dificultades como:
           </p>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
             {services.map((column, index) => (
@@ -284,8 +284,7 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
                   Control psiquiátrico
                 </h3>
                 <p className="mt-4 text-[#4b4f58]">
-                  Se trata de las evaluaciones que siguen a la primera cita. Su objetivo es
-                  observar tu evolución, afinar diagnósticos y revisar la evolución clínica y ajustar el plan de atención cuando corresponda. En
+                  Se trata de las evaluaciones que siguen a la primera cita. Su objetivo es realizar seguimiento clínico, afinar diagnósticos y ajustar el plan de atención cuando corresponda. En
                   esta etapa busco tener una mirada crítica y flexible para adaptarme a tus necesidades.
                 </p>
               </div>
@@ -414,7 +413,7 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
 
       <footer className="bg-[#2f2f2f] py-10 text-center text-sm leading-relaxed text-white/80">
         <p className="font-semibold text-white">Mi Psiquiatra</p>
-        <p className="mt-2">Dra. Mariela Yañez · Médico cirujano · Psiquiatría clínica para adultos · Especialista EMDR</p>
+        <p className="mt-2">Dra. Mariela Yañez · Médico cirujano · Psiquiatría clínica para adultos · Terapeuta EMDR</p>
         <p className="mt-1">Atención por telemedicina (videollamada) · Chile</p>
         <div className="mx-auto mt-6 max-w-xl rounded-lg bg-red-900/40 px-6 py-4">
           <p className="text-xs font-medium text-white">
