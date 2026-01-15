@@ -175,7 +175,7 @@ export default function PaymentLinksPage() {
                   </div>
                   {paymentLinks[booking.id]?.redirect_url ? (
                     <a
-                      href={paymentLinks[booking.id].redirect_url}
+                      href={paymentLinks[booking.id]?.redirect_url ?? undefined}
                       className="text-xs text-[var(--brand-teal)] underline"
                       target="_blank"
                       rel="noreferrer"
