@@ -219,6 +219,9 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
               </div>
             ))}
           </div>
+          <div className="mx-auto mt-8 max-w-3xl rounded-3xl border border-[#f0e4d6] bg-white/80 p-4 text-center text-sm text-[#4b4f58]">
+            Los resultados varían caso a caso y dependen principalmente del involucramiento del paciente en su proceso.
+          </div>
         </div>
       </section>
 
