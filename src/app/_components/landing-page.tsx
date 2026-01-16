@@ -219,8 +219,27 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
               </div>
             ))}
           </div>
-          <div className="mx-auto mt-8 max-w-3xl rounded-3xl border border-[#f0e4d6] bg-white/80 p-4 text-center text-sm text-[#4b4f58]">
-            Los resultados varían caso a caso y dependen principalmente del involucramiento del paciente en su proceso.
+          <div className="mx-auto mt-8 flex max-w-3xl items-center justify-center gap-2 rounded-3xl border border-[#c7dbf5] bg-[#e7f0fb] p-4 text-center text-sm text-[#2a4f8c]">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+              <path
+                d="M12 10.5v6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+            </svg>
+            <span>
+              Los resultados varían caso a caso y dependen principalmente del involucramiento del paciente en su proceso.
+            </span>
           </div>
         </div>
       </section>
