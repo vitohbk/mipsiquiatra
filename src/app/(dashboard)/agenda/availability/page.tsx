@@ -159,7 +159,14 @@ export default function AvailabilityPage() {
       return;
     }
 
-    const payload = selectedWeekdays.map((day) => ({
+    const payload: Array<{
+      tenant_id: string;
+      professional_user_id: string;
+      weekday: number;
+      start_time: string;
+      end_time: string;
+      timezone: string;
+    }> = selectedWeekdays.map((day) => ({
       tenant_id: activeTenantId,
       professional_user_id: professionalId,
       weekday: day,
@@ -170,7 +177,7 @@ export default function AvailabilityPage() {
 
     const { error: insertError } = await supabase
       .from("availability_rules")
-      .insert(payload);
+      .insert(payload as Array<Record<string, unknown>>);
 
     if (insertError) {
       setError(insertError.message);
