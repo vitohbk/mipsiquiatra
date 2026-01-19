@@ -3,7 +3,6 @@ import Image from "next/image";
 const heroImage = "/assets/hero.webp";
 const logoImage = "/assets/logo.webp";
 const marielaImage = "/assets/mariela-yanez.webp";
-const signatureImage = "/assets/firma.webp";
 const methodImage = "/assets/metodo.webp";
 const placeImages = [
   "/assets/telemedicina-1.webp",
@@ -213,7 +212,7 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {testimonials.map((item) => (
               <div key={item.name} className="rounded-3xl border border-[#f0e4d6] bg-white p-6">
-                <p className="text-sm text-[#4b4f58]">"{item.quote}"</p>
+                <p className="text-sm text-[#4b4f58]">&quot;{item.quote}&quot;</p>
                 <p className="mt-4 text-xs uppercase tracking-[0.25em] text-[#b87333]">★★★★★</p>
                 <p className="mt-3 font-semibold text-[#2f2f2f]">{item.name}</p>
               </div>

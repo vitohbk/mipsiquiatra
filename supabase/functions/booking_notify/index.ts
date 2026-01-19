@@ -6,15 +6,6 @@ const notifyUrl = Deno.env.get("NOTIFY_WEBHOOK_URL") ?? "";
 const notifySecret = Deno.env.get("NOTIFY_WEBHOOK_SECRET") ?? "";
 const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.mipsiquiatra.cl").replace(/\/$/, "");
 
-type BookingDetails = {
-  id: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  start_at: string;
-  services?: { name: string | null } | null;
-  tenants?: { name: string | null; timezone: string | null } | null;
-};
-
 async function hashToken(token: string) {
   const data = new TextEncoder().encode(token);
   const digest = await crypto.subtle.digest("SHA-256", data);

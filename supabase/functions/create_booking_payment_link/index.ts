@@ -14,7 +14,7 @@ function parseReturnUrl(value: string | null) {
     if (parsed.protocol === "https:" || parsed.protocol === "http:") {
       return parsed.toString();
     }
-  } catch (_error) {
+  } catch {
     return null;
   }
   return null;

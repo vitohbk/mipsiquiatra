@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { callEdgeFunction } from "@/lib/api/edge";
@@ -82,7 +82,7 @@ export default function UsersPage() {
   const [currentRole, setCurrentRole] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     if (!activeTenantId) return;
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -140,11 +140,11 @@ export default function UsersPage() {
     } catch (edgeError) {
       setError(edgeError instanceof Error ? edgeError.message : "Error cargando usuarios");
     }
-  };
+  }, [activeTenantId, supabase]);
 
   useEffect(() => {
     loadMembers();
-  }, [supabase, activeTenantId]);
+  }, [loadMembers]);
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
@@ -479,8 +479,8 @@ export default function UsersPage() {
                   }
 
                   if (Object.keys(profileUpdates).length > 0) {
-                    const { error: profileError } = await (supabase
-                      .from("profiles") as any)
+                    const { error: profileError } = await supabase
+                      .from("profiles")
                       .update(profileUpdates)
                       .eq("user_id", editingMember.user_id);
                     if (profileError) {
@@ -489,8 +489,8 @@ export default function UsersPage() {
                   }
 
                   if (editingMember.role !== "owner" && editRole !== editingMember.role) {
-                    const { error: roleError } = await (supabase
-                      .from("memberships") as any)
+                    const { error: roleError } = await supabase
+                      .from("memberships")
                       .update({ role: editRole })
                       .eq("id", editingMember.id);
                     if (roleError) {
@@ -499,8 +499,8 @@ export default function UsersPage() {
                   }
 
                   if ((editSecondaryRole ?? null) !== (editingMember.secondary_role ?? null)) {
-                    const { error: secondaryError } = await (supabase
-                      .from("memberships") as any)
+                    const { error: secondaryError } = await supabase
+                      .from("memberships")
                       .update({ secondary_role: editSecondaryRole })
                       .eq("id", editingMember.id);
                     if (secondaryError) {
@@ -531,8 +531,8 @@ export default function UsersPage() {
                           timezone: "America/Santiago",
                         })),
                       );
-                      const { error: ruleError } = await (supabase
-                        .from("availability_rules") as any)
+                      const { error: ruleError } = await supabase
+                        .from("availability_rules")
                         .insert(rulePayload);
                       if (ruleError) {
                         throw ruleError;
@@ -560,8 +560,8 @@ export default function UsersPage() {
                         start_time: ex.allDay ? null : ex.startTime,
                         end_time: ex.allDay ? null : ex.endTime,
                       }));
-                      const { error: exceptionError } = await (supabase
-                        .from("availability_exceptions") as any)
+                      const { error: exceptionError } = await supabase
+                        .from("availability_exceptions")
                         .insert(exceptionPayload);
                       if (exceptionError) {
                         throw exceptionError;
@@ -989,8 +989,8 @@ export default function UsersPage() {
                         timezone: "America/Santiago",
                       })),
                     );
-                    const { error: ruleError } = await (supabase
-                      .from("availability_rules") as any)
+                    const { error: ruleError } = await supabase
+                      .from("availability_rules")
                       .insert(rulePayload);
                     if (ruleError) throw ruleError;
                   }
@@ -1006,8 +1006,8 @@ export default function UsersPage() {
                       start_time: ex.allDay ? null : ex.startTime,
                       end_time: ex.allDay ? null : ex.endTime,
                     }));
-                    const { error: exceptionError } = await (supabase
-                      .from("availability_exceptions") as any)
+                    const { error: exceptionError } = await supabase
+                      .from("availability_exceptions")
                       .insert(exceptionPayload);
                     if (exceptionError) throw exceptionError;
                   }

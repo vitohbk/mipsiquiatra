@@ -175,7 +175,7 @@ export default function PatientsPage() {
       return;
     }
 
-    const { error: insertError } = await (supabase.from("patients") as any).insert({
+    const { error: insertError } = await supabase.from("patients").insert({
       tenant_id: activeTenantId,
       first_name: capitalizeFirst(firstName),
       last_name: capitalizeFirst(lastName),
@@ -244,7 +244,8 @@ export default function PatientsPage() {
       return;
     }
 
-    const { error: updateError } = await (supabase.from("patients") as any)
+    const { error: updateError } = await supabase
+      .from("patients")
       .update({
         first_name: capitalizeFirst(editFirstName),
         last_name: capitalizeFirst(editLastName),

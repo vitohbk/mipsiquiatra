@@ -131,6 +131,7 @@ export default function PublicBookingPage() {
   const [monthAvailability, setMonthAvailability] = useState<Record<string, number>>({});
   const [autoSelectFirstSlot, setAutoSelectFirstSlot] = useState(false);
   const autoSelectedDateRef = useRef(false);
+  const [initialSlotsLoaded, setInitialSlotsLoaded] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -143,18 +144,7 @@ export default function PublicBookingPage() {
         setService(lookup.service);
         setTenant(lookup.tenant);
 
-        const selected = new Date();
-        const availability = await callEdgeFunction<{ slots: Slot[] }>(
-          "public_availability",
-          {
-            slug,
-            start_date: formatDate(selected),
-            end_date: formatDate(selected),
-          },
-          { disableAuth: true },
-        );
-
-        setSlots(availability.slots);
+        // Slots are loaded by the selectedDate effect to avoid duplicate requests.
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
       }
@@ -164,8 +154,13 @@ export default function PublicBookingPage() {
   }, [slug]);
 
   useEffect(() => {
+    setInitialSlotsLoaded(false);
+  }, [slug]);
+
+  useEffect(() => {
     const loadNextAvailability = async () => {
       if (!slug) return;
+      if (!initialSlotsLoaded) return;
       try {
         const today = normalizeUtcDate(new Date());
         const maxLookaheadDays = 93;
@@ -204,7 +199,7 @@ export default function PublicBookingPage() {
     };
 
     loadNextAvailability();
-  }, [slug]);
+  }, [slug, initialSlotsLoaded]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -292,6 +287,7 @@ export default function PublicBookingPage() {
         } else {
           setSelectedSlot(null);
         }
+        setInitialSlotsLoaded(true);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
       }
@@ -300,16 +296,18 @@ export default function PublicBookingPage() {
     if (slug) {
       loadSlots();
     }
-  }, [slug, selectedDate]);
+  }, [slug, selectedDate, autoSelectFirstSlot]);
 
   const monthStart = startOfMonth(monthCursor);
   const monthEnd = endOfMonth(monthCursor);
   const monthDays = monthEnd.getUTCDate();
   const firstWeekday = monthStart.getUTCDay();
+  const todayUtc = normalizeUtcDate(new Date());
 
   useEffect(() => {
     const loadMonth = async () => {
       if (!slug) return;
+      if (!initialSlotsLoaded) return;
       try {
         const rangeStart = startOfMonth(monthCursor);
         const rangeEnd = endOfMonth(monthCursor);
@@ -334,7 +332,7 @@ export default function PublicBookingPage() {
     };
 
     loadMonth();
-  }, [slug, monthCursor]);
+  }, [slug, monthCursor, initialSlotsLoaded]);
 
   const lookupPatientByRut = async (value: string) => {
     if (!value || noRut) return;
@@ -541,7 +539,9 @@ export default function PublicBookingPage() {
                     ) : null}
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-[var(--font-playfair)] text-[var(--brand-ink)] md:text-xl">
-                        {capitalizeFirst(monthCursor.toLocaleDateString("es-CL", { month: "long" }))}
+                        {capitalizeFirst(
+                          monthCursor.toLocaleDateString("es-CL", { month: "long", timeZone: "UTC" }),
+                        )}
                       </h2>
                     <div className="flex items-center gap-2">
                       <button
@@ -596,19 +596,28 @@ export default function PublicBookingPage() {
                       const day = idx + 1;
                       const date = new Date(Date.UTC(monthCursor.getUTCFullYear(), monthCursor.getUTCMonth(), day));
                       const isSelected = formatDate(date) === formatDate(selectedDate);
+                      const isPast = date.getTime() < todayUtc.getTime();
                       const dayKey = formatDate(date);
                       const hasSlots = (monthAvailability[dayKey] ?? 0) > 0;
+                      const isFutureWithoutSlots =
+                        !hasSlots && date.getTime() > todayUtc.getTime();
+                      const isDisabled = isPast || isFutureWithoutSlots;
                       return (
                         <button
                           key={`day-${day}`}
                           type="button"
+                          disabled={isDisabled}
                           className={`rounded-full border px-2 py-2 text-base transition ${
                             isSelected
                               ? "border-[var(--brand-teal)] bg-[var(--brand-teal)] text-black"
                               : hasSlots
                                 ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-ink)] hover:bg-[var(--brand-border)]"
                                 : "border-[var(--brand-border)] text-[var(--brand-muted)] hover:bg-[var(--brand-paper)]"
-                          }`}
+                          } ${
+                            isDisabled
+                              ? "cursor-not-allowed text-[var(--brand-muted)]/40 hover:bg-transparent"
+                              : ""
+                          } ${isFutureWithoutSlots ? "line-through" : ""}`}
                           onClick={() => setSelectedDate(date)}
                         >
                           {day}

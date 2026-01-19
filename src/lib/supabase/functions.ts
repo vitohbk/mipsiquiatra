@@ -2,7 +2,7 @@ import { supabaseBrowser } from "./client";
 
 const functionsBase = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, "");
 
-async function callEdgeFunction(name: string, body: any) {
+async function callEdgeFunction(name: string, body: unknown) {
   const supabase = supabaseBrowser();
   const {
     data: { session },
@@ -24,15 +24,18 @@ async function callEdgeFunction(name: string, body: any) {
   });
 
   const text = await res.text();
-  let data: any = null;
+  let data: unknown = null;
   try {
-    data = text ? JSON.parse(text) : null;
-  } catch (e) {
+    data = text ? (JSON.parse(text) as unknown) : null;
+  } catch {
     data = text;
   }
 
   if (!res.ok) {
-    const err: any = new Error(`Function ${name} failed: ${res.status} ${res.statusText}`);
+    const err = new Error(`Function ${name} failed: ${res.status} ${res.statusText}`) as Error & {
+      status?: number;
+      body?: unknown;
+    };
     err.status = res.status;
     err.body = data;
     throw err;

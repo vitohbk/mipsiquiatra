@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 const STORAGE_KEY = "activeTenantId";
 
 export function useActiveTenant() {
-  const [activeTenantId, setActiveTenantId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    setActiveTenantId(stored);
-  }, []);
+  const [activeTenantId, setActiveTenantId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(STORAGE_KEY);
+  });
 
   const updateActiveTenantId = useCallback((tenantId: string | null) => {
     if (tenantId) {

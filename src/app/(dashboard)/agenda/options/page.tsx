@@ -85,8 +85,8 @@ export default function SettingsPage() {
       setLogoUrl(nextLogoUrl);
     }
 
-    const { error: updateError } = await (supabase
-      .from("tenants") as any)
+    const { error: updateError } = await supabase
+      .from("tenants")
       .update({
         name,
         slug,

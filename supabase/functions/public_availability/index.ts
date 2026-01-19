@@ -131,7 +131,6 @@ serve(async (req) => {
 
     const timezone = tenant?.timezone ?? "America/Santiago";
     const minAdvanceHours = service?.max_advance_hours ?? 72;
-    const nowUtc = new Date();
     const minAdvanceDate = new Date(Date.now() + minAdvanceHours * 60 * 60 * 1000);
 
     const rulesResult = await admin

@@ -31,13 +31,6 @@ type Service = {
   professional_user_id: string;
 };
 
-type BookingLink = {
-  id: string;
-  slug: string;
-  public_token: string;
-  service_id: string;
-};
-
 const slugPattern = /^[a-z0-9-]+$/;
 
 function slugify(value: string) {
@@ -181,7 +174,7 @@ export default function ServicesPage() {
     };
 
     load();
-  }, [supabase, activeTenantId, setActiveTenantId]);
+  }, [supabase, activeTenantId, setActiveTenantId, serviceProfessionalId]);
 
   useEffect(() => {
     if (searchParams.get("create") === "1") {
@@ -360,8 +353,8 @@ export default function ServicesPage() {
       return;
     }
 
-    const { data: serviceInsert, error } = await (supabase
-      .from("services") as any)
+    const { data: serviceInsert, error } = await supabase
+      .from("services")
       .insert({
         tenant_id: activeTenantId,
         professional_user_id: serviceProfessionalId,
@@ -395,8 +388,8 @@ export default function ServicesPage() {
           timezone: "America/Santiago",
         })),
       );
-      const { error: ruleError } = await (supabase
-        .from("availability_rules") as any)
+      const { error: ruleError } = await supabase
+        .from("availability_rules")
         .insert(rulePayload);
       if (ruleError) {
         setFormError(`Servicio creado, pero reglas fallaron: ${ruleError.message}`);
@@ -414,15 +407,15 @@ export default function ServicesPage() {
         start_time: ex.allDay ? null : ex.startTime,
         end_time: ex.allDay ? null : ex.endTime,
       }));
-      const { error: exceptionError } = await (supabase
-        .from("availability_exceptions") as any)
+      const { error: exceptionError } = await supabase
+        .from("availability_exceptions")
         .insert(exceptionPayload);
       if (exceptionError) {
         setFormError(`Servicio creado, pero excepcion falló: ${exceptionError.message}`);
       }
     }
 
-    const { error: linkError } = await (supabase.from("public_booking_links") as any).insert({
+    const { error: linkError } = await supabase.from("public_booking_links").insert({
       tenant_id: activeTenantId,
       service_id: serviceInsert.id,
       professional_user_id: serviceProfessionalId,
@@ -657,8 +650,8 @@ export default function ServicesPage() {
       return;
     }
 
-    const { error } = await (supabase
-      .from("services") as any)
+    const { error } = await supabase
+      .from("services")
       .update({
         name: editName,
         description: editDescription || null,
@@ -700,8 +693,8 @@ export default function ServicesPage() {
             timezone: "America/Santiago",
           })),
         );
-        const { error: ruleError } = await (supabase
-          .from("availability_rules") as any)
+        const { error: ruleError } = await supabase
+          .from("availability_rules")
           .insert(rulePayload);
         if (ruleError) {
           setFormError(ruleError.message);
@@ -730,8 +723,8 @@ export default function ServicesPage() {
           start_time: ex.allDay ? null : ex.startTime,
           end_time: ex.allDay ? null : ex.endTime,
         }));
-        const { error: exceptionError } = await (supabase
-          .from("availability_exceptions") as any)
+        const { error: exceptionError } = await supabase
+          .from("availability_exceptions")
           .insert(exceptionPayload);
         if (exceptionError) {
           setFormError(exceptionError.message);

@@ -103,7 +103,7 @@ export default function RescheduleBookingPage() {
           counts[day] = (counts[day] ?? 0) + 1;
         });
         setMonthAvailability(counts);
-      } catch (_error) {
+      } catch {
         setMonthAvailability({});
       }
     };

@@ -168,8 +168,8 @@ export default function AvailabilityPage() {
       timezone: "America/Santiago",
     }));
 
-    const { error: insertError } = await (supabase
-      .from("availability_rules") as any)
+    const { error: insertError } = await supabase
+      .from("availability_rules")
       .insert(payload);
 
     if (insertError) {
@@ -209,8 +209,8 @@ export default function AvailabilityPage() {
       end_time: exceptionAllDay ? null : exceptionEnd,
     };
 
-    const { error: insertError } = await (supabase
-      .from("availability_exceptions") as any)
+    const { error: insertError } = await supabase
+      .from("availability_exceptions")
       .insert(payload);
     if (insertError) {
       setError(insertError.message);

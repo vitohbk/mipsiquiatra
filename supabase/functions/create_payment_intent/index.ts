@@ -303,7 +303,7 @@ serve(async (req) => {
         if (parsed.protocol === "https:" || parsed.protocol === "http:") {
           returnUrl = parsed.toString();
         }
-      } catch (_error) {
+      } catch {
         returnUrl = null;
       }
     }

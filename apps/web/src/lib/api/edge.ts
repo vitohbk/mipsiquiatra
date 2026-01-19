@@ -48,7 +48,7 @@ export async function callEdgeFunction<T>(
       } else if (session?.access_token) {
         token = session.access_token;
       }
-    } catch (e) {
+    } catch {
       // ignore errors getting session
     }
   }
@@ -68,15 +68,19 @@ export async function callEdgeFunction<T>(
   });
 
   const text = await response.text();
-  let data: any = null;
+  let data: unknown = null;
   try {
-    data = text ? JSON.parse(text) : null;
-  } catch (e) {
+    data = text ? (JSON.parse(text) as unknown) : null;
+  } catch {
     data = text;
   }
 
   if (!response.ok) {
-    throw new Error(data?.error ?? `Edge function error: ${response.status}`);
+    const errorMessage =
+      typeof data === "object" && data !== null && "error" in data
+        ? (data as { error?: string }).error
+        : null;
+    throw new Error(errorMessage ?? `Edge function error: ${response.status}`);
   }
 
   return data as T;

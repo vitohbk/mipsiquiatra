@@ -198,7 +198,7 @@ serve(async (req) => {
               source: "public",
             }),
           });
-        } catch (_error) {
+        } catch {
           // Best-effort notification placeholder.
         }
       }

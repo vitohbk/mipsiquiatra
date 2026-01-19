@@ -125,7 +125,7 @@ serve(async (req) => {
               timezone,
             }),
           });
-        } catch (_error) {
+        } catch {
           // Best-effort notification.
         }
       }

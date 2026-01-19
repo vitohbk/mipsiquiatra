@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { callEdgeFunction } from "@/lib/api/edge";
@@ -17,7 +17,7 @@ type Booking = {
   service_id: string | null;
   patient_id: string | null;
   payment_id: string | null;
-  payments?: { status: string | null } | null;
+  payments?: { status: string | null }[] | { status: string | null } | null;
   services?: {
     name: string;
     modality: string | null;
@@ -104,47 +104,62 @@ export default function BookingsPage() {
   } | null>(null);
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"future" | "past">("future");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentModalValue, setPaymentModalValue] = useState("");
+  const [paymentModalBooking, setPaymentModalBooking] = useState<Booking | null>(null);
+  const [paymentModalMode, setPaymentModalMode] = useState<"paid" | "unpaid">("paid");
 
   useEffect(() => {
     const load = async () => {
       if (!activeTenantId) return;
-      const { data: bookingData, error: bookingError } = await supabase
-        .from("bookings")
-        .select(
-          "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency), payments(status)",
-        )
-        .eq("tenant_id", activeTenantId)
-        .neq("status", "cancelled")
-        .order("start_at", { ascending: true });
+      const [
+        bookingsResult,
+        servicesResult,
+        patientsResult,
+        membersResult,
+        tenantResult,
+        authResult,
+      ] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select(
+            "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency), payments(status)",
+          )
+          .eq("tenant_id", activeTenantId)
+          .neq("status", "cancelled")
+          .order("start_at", { ascending: true }),
+        supabase
+          .from("services")
+          .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency")
+          .eq("tenant_id", activeTenantId),
+        supabase
+          .from("patients")
+          .select("id, first_name, last_name, email")
+          .eq("tenant_id", activeTenantId),
+        supabase
+          .from("memberships")
+          .select("user_id, role, secondary_role")
+          .eq("tenant_id", activeTenantId),
+        supabase
+          .from("tenants")
+          .select("timezone")
+          .eq("id", activeTenantId)
+          .maybeSingle<{ timezone: string | null }>(),
+        supabase.auth.getUser(),
+      ]);
 
-      if (bookingError) {
-        setError(bookingError.message);
+      if (bookingsResult.error) {
+        setError(bookingsResult.error.message);
         return;
       }
 
       setPaymentStatusMap({});
-
-      const { data: serviceData } = await supabase
-        .from("services")
-        .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency")
-        .eq("tenant_id", activeTenantId);
-
-      const { data: patientData } = await supabase
-        .from("patients")
-        .select("id, first_name, last_name, email")
-        .eq("tenant_id", activeTenantId);
-
-      const { data: memberData } = await supabase
-        .from("memberships")
-        .select("user_id, role, secondary_role")
-        .eq("tenant_id", activeTenantId);
-      const { data: tenantData } = await supabase
-        .from("tenants")
-        .select("timezone")
-        .eq("id", activeTenantId)
-        .maybeSingle<{ timezone: string | null }>();
-
-      const { data: authData } = await supabase.auth.getUser();
+      const bookingData = bookingsResult.data;
+      const serviceData = servicesResult.data;
+      const patientData = patientsResult.data;
+      const memberData = membersResult.data;
+      const tenantData = tenantResult.data;
+      const authData = authResult.data;
       const currentUserId = authData?.user?.id ?? null;
       const currentMembership = ((memberData ?? []) as Array<{
         user_id: string;
@@ -238,8 +253,8 @@ export default function BookingsPage() {
           setCreateAvailableSlots([]);
           return;
         }
-        const { data: createdLink, error: createLinkError } = await (supabase
-          .from("public_booking_links") as any)
+        const { data: createdLink, error: createLinkError } = await supabase
+          .from("public_booking_links")
           .insert({
             tenant_id: activeTenantId,
             service_id: createServiceId,
@@ -274,7 +289,7 @@ export default function BookingsPage() {
     };
 
     loadCreateLink();
-  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase]);
+  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase, services, loadCreateAvailability]);
 
   const professionalLabel = (userId?: string | null) => {
     if (!userId) return "Sin profesional";
@@ -332,8 +347,11 @@ export default function BookingsPage() {
   const isPaymentPaid = (booking: Booking) => {
     const paymentKey = booking.payment_id ?? booking.id;
     const statusOverride = paymentStatusMap[paymentKey];
-    const status = statusOverride ?? booking.payments?.status ?? "";
-    return status === "paid";
+    if (statusOverride) return statusOverride === "paid";
+    if (Array.isArray(booking.payments)) {
+      return booking.payments[0]?.status === "paid";
+    }
+    return booking.payments?.status === "paid";
   };
 
   const toTenantDateKey = (iso: string) =>
@@ -344,13 +362,16 @@ export default function BookingsPage() {
       day: "2-digit",
     }).format(new Date(iso));
 
-  const formatTenantTime = (iso: string) =>
-    new Intl.DateTimeFormat("es-CL", {
-      timeZone: tenantTimezone,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date(iso));
+  const formatTenantTime = useCallback(
+    (iso: string) =>
+      new Intl.DateTimeFormat("es-CL", {
+        timeZone: tenantTimezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(iso)),
+    [tenantTimezone],
+  );
 
   const todayKey = toTenantDateKey(new Date().toISOString());
   const filteredBookings = bookings.filter((booking) => {
@@ -413,7 +434,7 @@ export default function BookingsPage() {
     }
   };
 
-  const loadCreateAvailability = async (link: BookingLink, dateStr: string) => {
+  const loadCreateAvailability = useCallback(async (link: BookingLink, dateStr: string) => {
     setCreateAvailabilityLoading(true);
     try {
       const availability = await callEdgeFunction<{ slots: Slot[] }>(
@@ -443,7 +464,7 @@ export default function BookingsPage() {
     } finally {
       setCreateAvailabilityLoading(false);
     }
-  };
+  }, [createTime, formatTenantTime]);
 
   const openReschedule = async (booking: Booking, options?: { quiet?: boolean }) => {
     setEditingBookingId(booking.id);
@@ -492,106 +513,76 @@ export default function BookingsPage() {
     }
   };
 
-  const handleMarkPaid = async (booking: Booking) => {
+  const openPaymentModal = (booking: Booking, mode: "paid" | "unpaid") => {
+    setPaymentModalBooking(booking);
+    setPaymentModalMode(mode);
+    setPaymentModalValue("");
+    setPaymentModalOpen(true);
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModalOpen(false);
+    setPaymentModalBooking(null);
+    setPaymentModalValue("");
+  };
+
+  const handlePaymentStatus = async (booking: Booking, mode: "paid" | "unpaid") => {
     const paymentKey = booking.payment_id ?? booking.id;
     const previousStatus = paymentStatusMap[paymentKey] ?? "";
     setError(null);
     setMarkingPaidId(paymentKey);
-    setPaymentStatusMap((current) => ({ ...current, [paymentKey]: "paid" }));
+    const optimisticStatus = mode === "paid" ? "paid" : "pending";
+    setPaymentStatusMap((current) => ({ ...current, [paymentKey]: optimisticStatus }));
+    let didSucceed = false;
 
-    if (booking.payment_id) {
-      const { error: updateError } = await (supabase
-        .from("payments") as any)
-        .update({ status: "paid" })
-        .eq("id", booking.payment_id);
-      if (updateError) {
-        setError(updateError.message);
-        setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
-        setMarkingPaidId(null);
-        return;
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const authToken = sessionData.session?.access_token ?? null;
+      if (sessionError || !authToken) {
+        throw new Error("No hay sesión activa.");
       }
-      setMarkingPaidId(null);
-      return;
-    }
-
-    const service = booking.services;
-    if (!service || !activeTenantId) {
-      setError("La cita no tiene servicio o tenant asociado.");
+      const result = await callEdgeFunction<{ payment_id: string; status: string }>(
+        "mark_booking_paid",
+        { booking_id: booking.id, auth_token: authToken, status: mode },
+        { disableAuth: true },
+      );
+      if (!result?.payment_id) {
+        throw new Error(mode === "paid" ? "No se pudo confirmar el pago." : "No se pudo desmarcar el pago.");
+      }
+      setPaymentStatusMap((current) => {
+        const next = { ...current };
+        delete next[paymentKey];
+        next[result.payment_id] = result.status;
+        return next;
+      });
+      setBookings((current) =>
+        current.map((item) =>
+          item.id === booking.id
+            ? {
+                ...item,
+                payment_id: result.payment_id,
+                payments: { status: result.status },
+              }
+            : item,
+        ),
+      );
+      didSucceed = true;
+    } catch (markError) {
+      const fallback = mode === "paid" ? "No se pudo marcar como pagado." : "No se pudo desmarcar el pago.";
+      setError(markError instanceof Error ? markError.message : fallback);
       setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
+    } finally {
       setMarkingPaidId(null);
-      return;
     }
-
-    const amount = service.payment_mode === "deposit"
-      ? (service.deposit_amount_clp ?? service.price_clp ?? 0)
-      : (service.price_clp ?? 0);
-
-    if (!amount) {
-      setError("No se pudo calcular el monto.");
-      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
-      setMarkingPaidId(null);
-      return;
-    }
-
-    const paymentInsert = await (supabase
-      .from("payments") as any)
-      .insert({
-        tenant_id: activeTenantId,
-        provider: "mercadopago",
-        idempotency_key: crypto.randomUUID(),
-        amount_clp: amount,
-        currency: service.currency ?? "CLP",
-        status: "paid",
-        paid_at: new Date().toISOString(),
-        raw_response: { manual: true, booking_id: booking.id },
-      })
-      .select("id")
-      .single();
-
-    if (paymentInsert.error || !paymentInsert.data) {
-      setError(paymentInsert.error?.message ?? "No se pudo crear el pago.");
-      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
-      setMarkingPaidId(null);
-      return;
-    }
-
-    const { error: bookingUpdateError } = await (supabase
-      .from("bookings") as any)
-      .update({ payment_id: paymentInsert.data.id })
-      .eq("id", booking.id);
-
-    if (bookingUpdateError) {
-      setError(bookingUpdateError.message);
-      setPaymentStatusMap((current) => ({ ...current, [paymentKey]: previousStatus }));
-      setMarkingPaidId(null);
-      return;
-    }
-
-    setPaymentStatusMap((current) => {
-      const next = { ...current };
-      delete next[paymentKey];
-      next[paymentInsert.data.id] = "paid";
-      return next;
-    });
-    setBookings((current) =>
-      current.map((item) =>
-        item.id === booking.id
-          ? {
-              ...item,
-              payment_id: paymentInsert.data.id,
-              payments: { status: "paid" },
-            }
-          : item,
-      ),
-    );
-    setMarkingPaidId(null);
+    return didSucceed;
   };
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!window.confirm("Cancelar esta cita?")) return;
     setError(null);
     setSavingEdit(true);
-    const { error: cancelError } = await (supabase.from("bookings") as any)
+    const { error: cancelError } = await supabase
+      .from("bookings")
       .update({ status: "cancelled" })
       .eq("id", bookingId);
     if (cancelError) {
@@ -612,7 +603,7 @@ export default function BookingsPage() {
           },
           { disableAuth: true },
         );
-      } catch (_error) {
+      } catch {
         // Best-effort cancellation email for manual actions.
       }
     }
@@ -622,6 +613,9 @@ export default function BookingsPage() {
   };
 
   const pillTone = activeTab === "past" ? "opacity-60" : "";
+  const requiredPaymentPhrase = paymentModalMode === "paid" ? "PAGADO" : "NO PAGADO";
+  const paymentPhraseMatches =
+    paymentModalValue.trim().toUpperCase() === requiredPaymentPhrase;
 
   return (
     <section className="space-y-8">
@@ -708,14 +702,14 @@ export default function BookingsPage() {
                           <button
                             className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition ${
                               isPaid
-                                ? "border-emerald-200 text-emerald-600"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-600"
                                 : "border-[var(--panel-border)] text-[var(--panel-muted)] hover:text-[var(--page-text)]"
                             }`}
                             type="button"
-                            onClick={() => handleMarkPaid(booking)}
-                            disabled={!booking.payment_id || markingPaidId === booking.payment_id}
-                            aria-label={isPaid ? "Pagado" : "Marcar como pagado"}
-                            title={isPaid ? "Pagado" : "Marcar como pagado"}
+                            onClick={() => openPaymentModal(booking, isPaid ? "unpaid" : "paid")}
+                            disabled={markingPaidId === (booking.payment_id ?? booking.id)}
+                            aria-label={isPaid ? "Desmarcar pago" : "Marcar como pagado"}
+                            title={isPaid ? "Desmarcar pago" : "Marcar como pagado"}
                           >
                             P
                           </button>
@@ -798,7 +792,8 @@ export default function BookingsPage() {
                               return;
                             }
 
-                            const { error: updateError } = await (supabase.from("bookings") as any)
+                            const { error: updateError } = await supabase
+                              .from("bookings")
                               .update({
                                 patient_id: patient.id,
                                 customer_name: `${patient.first_name} ${patient.last_name}`,
@@ -840,7 +835,7 @@ export default function BookingsPage() {
                                   },
                                   { disableAuth: true },
                                 );
-                              } catch (_error) {
+                              } catch {
                                 // Best-effort reschedule email for manual actions.
                               }
                             }
@@ -999,8 +994,8 @@ export default function BookingsPage() {
                   return;
                 }
 
-                const { data: insertedBooking, error: insertError } = await (supabase
-                  .from("bookings") as any)
+                const { data: insertedBooking, error: insertError } = await supabase
+                  .from("bookings")
                   .insert({
                     tenant_id: activeTenantId,
                     service_id: service.id,
@@ -1032,7 +1027,7 @@ export default function BookingsPage() {
                       },
                       { disableAuth: true },
                     );
-                  } catch (_error) {
+                  } catch {
                     // Best-effort confirmation email for manual bookings.
                   }
                 }
@@ -1174,6 +1169,51 @@ export default function BookingsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+      {paymentModalOpen && paymentModalBooking ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-[var(--brand-ink)]">
+                {paymentModalMode === "paid" ? "Confirmar pago" : "Desmarcar pago"}
+              </h3>
+              <p className="text-sm text-[var(--panel-muted)]">
+                Escribe <strong>{requiredPaymentPhrase}</strong> para confirmar.
+              </p>
+            </div>
+            <div className="mt-4 space-y-3">
+              <input
+                className="w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-4 py-3 text-sm text-[var(--page-text)]"
+                value={paymentModalValue}
+                onChange={(event) => setPaymentModalValue(event.target.value)}
+                placeholder={requiredPaymentPhrase}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-sm"
+                  type="button"
+                  onClick={closePaymentModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+                  type="button"
+                  disabled={!paymentPhraseMatches || markingPaidId !== null}
+                  onClick={async () => {
+                    const ok = await handlePaymentStatus(paymentModalBooking, paymentModalMode);
+                    if (ok) {
+                      closePaymentModal();
+                    }
+                  }}
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
