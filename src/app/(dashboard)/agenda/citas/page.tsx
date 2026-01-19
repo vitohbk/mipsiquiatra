@@ -228,69 +228,6 @@ export default function BookingsPage() {
     }
   }, [professionals, createProfessionalId]);
 
-  useEffect(() => {
-    const loadCreateLink = async () => {
-      if (!activeTenantId || !createServiceId || !createProfessionalId) {
-        setCreateAvailabilityLink(null);
-        setCreateAvailableSlots([]);
-        return;
-      }
-      const { data: linkData, error: linkError } = await supabase
-        .from("public_booking_links")
-        .select("slug, public_token")
-        .eq("tenant_id", activeTenantId)
-        .eq("service_id", createServiceId)
-        .eq("professional_user_id", createProfessionalId)
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle<BookingLink>();
-
-      let nextLink: BookingLink | null = null;
-      if (linkError || !linkData) {
-        const service = services.find((item) => item.id === createServiceId);
-        if (!service?.slug) {
-          setCreateAvailabilityLink(null);
-          setCreateAvailableSlots([]);
-          return;
-        }
-        const { data: createdLink, error: createLinkError } = await supabase
-          .from("public_booking_links")
-          .insert({
-            tenant_id: activeTenantId,
-            service_id: createServiceId,
-            professional_user_id: createProfessionalId,
-            slug: service.slug,
-            public_token: crypto.randomUUID(),
-            is_active: true,
-          })
-          .select("slug, public_token")
-          .single();
-
-        if (createLinkError || !createdLink) {
-          setCreateAvailabilityLink(null);
-          setCreateAvailableSlots([]);
-          return;
-        }
-        nextLink = {
-          slug: createdLink.slug ?? null,
-          public_token: createdLink.public_token ?? null,
-        };
-      } else {
-        nextLink = {
-          slug: linkData.slug ?? null,
-          public_token: linkData.public_token ?? null,
-        };
-      }
-
-      setCreateAvailabilityLink(nextLink);
-      if (createDate) {
-        await loadCreateAvailability(nextLink, createDate);
-      }
-    };
-
-    loadCreateLink();
-  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase, services, loadCreateAvailability]);
-
   const professionalLabel = (userId?: string | null) => {
     if (!userId) return "Sin profesional";
     const match = professionals.find((member) => member.user_id === userId);
@@ -373,6 +310,102 @@ export default function BookingsPage() {
     [tenantTimezone],
   );
 
+  const loadCreateAvailability = useCallback(async (link: BookingLink, dateStr: string) => {
+    setCreateAvailabilityLoading(true);
+    try {
+      const availability = await callEdgeFunction<{ slots: Slot[] }>(
+        "public_availability",
+        {
+          slug: link.slug ?? undefined,
+          public_token: link.public_token ?? undefined,
+          start_date: dateStr,
+          end_date: dateStr,
+        },
+        { disableAuth: true },
+      );
+      const slots = availability.slots ?? [];
+      setCreateAvailableSlots(slots);
+      if (slots.length > 0) {
+        const current = slots.find((slot) => formatTenantTime(slot.start_at) === createTime);
+        if (!current) {
+          setCreateTime(formatTenantTime(slots[0].start_at));
+        }
+      } else {
+        setCreateTime("");
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "No se pudo cargar disponibilidad.");
+      setCreateAvailableSlots([]);
+      setCreateTime("");
+    } finally {
+      setCreateAvailabilityLoading(false);
+    }
+  }, [createTime, formatTenantTime]);
+
+  useEffect(() => {
+    const loadCreateLink = async () => {
+      if (!activeTenantId || !createServiceId || !createProfessionalId) {
+        setCreateAvailabilityLink(null);
+        setCreateAvailableSlots([]);
+        return;
+      }
+      const { data: linkData, error: linkError } = await supabase
+        .from("public_booking_links")
+        .select("slug, public_token")
+        .eq("tenant_id", activeTenantId)
+        .eq("service_id", createServiceId)
+        .eq("professional_user_id", createProfessionalId)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle<BookingLink>();
+
+      let nextLink: BookingLink | null = null;
+      if (linkError || !linkData) {
+        const service = services.find((item) => item.id === createServiceId);
+        if (!service?.slug) {
+          setCreateAvailabilityLink(null);
+          setCreateAvailableSlots([]);
+          return;
+        }
+        const { data: createdLinkRaw, error: createLinkError } = await supabase
+          .from("public_booking_links")
+          .insert({
+            tenant_id: activeTenantId,
+            service_id: createServiceId,
+            professional_user_id: createProfessionalId,
+            slug: service.slug,
+            public_token: crypto.randomUUID(),
+            is_active: true,
+          } as unknown as never)
+          .select("slug, public_token")
+          .single();
+        const createdLink = createdLinkRaw as { slug?: string | null; public_token?: string | null } | null;
+
+        if (createLinkError || !createdLink) {
+          setCreateAvailabilityLink(null);
+          setCreateAvailableSlots([]);
+          return;
+        }
+        nextLink = {
+          slug: createdLink.slug ?? null,
+          public_token: createdLink.public_token ?? null,
+        };
+      } else {
+        nextLink = {
+          slug: linkData.slug ?? null,
+          public_token: linkData.public_token ?? null,
+        };
+      }
+
+      setCreateAvailabilityLink(nextLink);
+      if (createDate) {
+        await loadCreateAvailability(nextLink, createDate);
+      }
+    };
+
+    loadCreateLink();
+  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase, services, loadCreateAvailability]);
+
   const todayKey = toTenantDateKey(new Date().toISOString());
   const filteredBookings = bookings.filter((booking) => {
     const dateKey = toTenantDateKey(booking.start_at);
@@ -433,38 +466,6 @@ export default function BookingsPage() {
       setAvailabilityLoading(false);
     }
   };
-
-  const loadCreateAvailability = useCallback(async (link: BookingLink, dateStr: string) => {
-    setCreateAvailabilityLoading(true);
-    try {
-      const availability = await callEdgeFunction<{ slots: Slot[] }>(
-        "public_availability",
-        {
-          slug: link.slug ?? undefined,
-          public_token: link.public_token ?? undefined,
-          start_date: dateStr,
-          end_date: dateStr,
-        },
-        { disableAuth: true },
-      );
-      const slots = availability.slots ?? [];
-      setCreateAvailableSlots(slots);
-      if (slots.length > 0) {
-        const current = slots.find((slot) => formatTenantTime(slot.start_at) === createTime);
-        if (!current) {
-          setCreateTime(formatTenantTime(slots[0].start_at));
-        }
-      } else {
-        setCreateTime("");
-      }
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "No se pudo cargar disponibilidad.");
-      setCreateAvailableSlots([]);
-      setCreateTime("");
-    } finally {
-      setCreateAvailabilityLoading(false);
-    }
-  }, [createTime, formatTenantTime]);
 
   const openReschedule = async (booking: Booking, options?: { quiet?: boolean }) => {
     setEditingBookingId(booking.id);
@@ -583,7 +584,7 @@ export default function BookingsPage() {
     setSavingEdit(true);
     const { error: cancelError } = await supabase
       .from("bookings")
-      .update({ status: "cancelled" })
+      .update({ status: "cancelled" } as unknown as never)
       .eq("id", bookingId);
     if (cancelError) {
       setError(cancelError.message);
@@ -800,7 +801,7 @@ export default function BookingsPage() {
                                 customer_email: patient.email,
                                 start_at: nextStartAt,
                                 end_at: nextEndAt,
-                              })
+                              } as unknown as never)
                               .eq("id", editingBookingId);
 
                             if (updateError) {
@@ -994,7 +995,7 @@ export default function BookingsPage() {
                   return;
                 }
 
-                const { data: insertedBooking, error: insertError } = await supabase
+                const { data: insertedBookingRaw, error: insertError } = await supabase
                   .from("bookings")
                   .insert({
                     tenant_id: activeTenantId,
@@ -1006,9 +1007,10 @@ export default function BookingsPage() {
                     start_at: match.start_at,
                     end_at: match.end_at,
                     status: "confirmed",
-                  })
+                  } as unknown as never)
                   .select("id")
                   .single();
+                const insertedBooking = insertedBookingRaw as { id?: string } | null;
 
                 if (insertError) {
                   setError(insertError.message);

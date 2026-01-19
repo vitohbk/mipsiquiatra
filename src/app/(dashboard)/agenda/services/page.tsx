@@ -353,7 +353,7 @@ export default function ServicesPage() {
       return;
     }
 
-    const { data: serviceInsert, error } = await supabase
+    const { data: serviceInsertRaw, error } = await supabase
       .from("services")
       .insert({
         tenant_id: activeTenantId,
@@ -367,9 +367,10 @@ export default function ServicesPage() {
         price_clp: price,
         payment_mode: "full",
         requires_payment: serviceRequiresPayment,
-      })
+      } as unknown as never)
       .select("id")
       .single();
+    const serviceInsert = serviceInsertRaw as { id?: string } | null;
 
     if (error || !serviceInsert) {
       setFormError(error?.message ?? "Error creando servicio");
@@ -390,7 +391,7 @@ export default function ServicesPage() {
       );
       const { error: ruleError } = await supabase
         .from("availability_rules")
-        .insert(rulePayload);
+        .insert(rulePayload as unknown as never);
       if (ruleError) {
         setFormError(`Servicio creado, pero reglas fallaron: ${ruleError.message}`);
       }
@@ -409,7 +410,7 @@ export default function ServicesPage() {
       }));
       const { error: exceptionError } = await supabase
         .from("availability_exceptions")
-        .insert(exceptionPayload);
+        .insert(exceptionPayload as unknown as never);
       if (exceptionError) {
         setFormError(`Servicio creado, pero excepcion falló: ${exceptionError.message}`);
       }
@@ -422,7 +423,7 @@ export default function ServicesPage() {
       slug: serviceSlug,
       public_token: crypto.randomUUID(),
       is_active: true,
-    });
+    } as unknown as never);
 
     if (linkError) {
       setFormError(`Servicio creado, pero link falló: ${linkError.message}`);
@@ -662,7 +663,7 @@ export default function ServicesPage() {
         price_clp: price,
         requires_payment: editRequiresPayment,
         professional_user_id: editProfessionalId,
-      })
+      } as unknown as never)
       .eq("id", editingServiceId);
 
     if (error) {
@@ -695,7 +696,7 @@ export default function ServicesPage() {
         );
         const { error: ruleError } = await supabase
           .from("availability_rules")
-          .insert(rulePayload);
+          .insert(rulePayload as unknown as never);
         if (ruleError) {
           setFormError(ruleError.message);
           return;
@@ -725,7 +726,7 @@ export default function ServicesPage() {
         }));
         const { error: exceptionError } = await supabase
           .from("availability_exceptions")
-          .insert(exceptionPayload);
+          .insert(exceptionPayload as unknown as never);
         if (exceptionError) {
           setFormError(exceptionError.message);
           return;

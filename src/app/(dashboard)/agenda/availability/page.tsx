@@ -177,7 +177,7 @@ export default function AvailabilityPage() {
 
     const { error: insertError } = await supabase
       .from("availability_rules")
-      .insert(payload as Array<Record<string, unknown>>);
+      .insert(payload as unknown as never);
 
     if (insertError) {
       setError(insertError.message);
@@ -218,7 +218,7 @@ export default function AvailabilityPage() {
 
     const { error: insertError } = await supabase
       .from("availability_exceptions")
-      .insert(payload);
+      .insert(payload as unknown as never);
     if (insertError) {
       setError(insertError.message);
       return;

@@ -481,7 +481,7 @@ export default function UsersPage() {
                   if (Object.keys(profileUpdates).length > 0) {
                     const { error: profileError } = await supabase
                       .from("profiles")
-                      .update(profileUpdates)
+                      .update(profileUpdates as unknown as never)
                       .eq("user_id", editingMember.user_id);
                     if (profileError) {
                       throw profileError;
@@ -491,7 +491,7 @@ export default function UsersPage() {
                   if (editingMember.role !== "owner" && editRole !== editingMember.role) {
                     const { error: roleError } = await supabase
                       .from("memberships")
-                      .update({ role: editRole })
+                      .update({ role: editRole } as unknown as never)
                       .eq("id", editingMember.id);
                     if (roleError) {
                       throw roleError;
@@ -501,7 +501,7 @@ export default function UsersPage() {
                   if ((editSecondaryRole ?? null) !== (editingMember.secondary_role ?? null)) {
                     const { error: secondaryError } = await supabase
                       .from("memberships")
-                      .update({ secondary_role: editSecondaryRole })
+                      .update({ secondary_role: editSecondaryRole } as unknown as never)
                       .eq("id", editingMember.id);
                     if (secondaryError) {
                       throw secondaryError;
@@ -533,7 +533,7 @@ export default function UsersPage() {
                       );
                       const { error: ruleError } = await supabase
                         .from("availability_rules")
-                        .insert(rulePayload);
+                        .insert(rulePayload as unknown as never);
                       if (ruleError) {
                         throw ruleError;
                       }
@@ -562,7 +562,7 @@ export default function UsersPage() {
                       }));
                       const { error: exceptionError } = await supabase
                         .from("availability_exceptions")
-                        .insert(exceptionPayload);
+                        .insert(exceptionPayload as unknown as never);
                       if (exceptionError) {
                         throw exceptionError;
                       }
@@ -991,7 +991,7 @@ export default function UsersPage() {
                     );
                     const { error: ruleError } = await supabase
                       .from("availability_rules")
-                      .insert(rulePayload);
+                      .insert(rulePayload as unknown as never);
                     if (ruleError) throw ruleError;
                   }
 
@@ -1008,7 +1008,7 @@ export default function UsersPage() {
                     }));
                     const { error: exceptionError } = await supabase
                       .from("availability_exceptions")
-                      .insert(exceptionPayload);
+                      .insert(exceptionPayload as unknown as never);
                     if (exceptionError) throw exceptionError;
                   }
                   await loadMembers();

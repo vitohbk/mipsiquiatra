@@ -187,7 +187,7 @@ export default function PatientsPage() {
       comuna: comuna || null,
       region: region || null,
       health_insurance: insurance,
-    });
+    } as unknown as never);
 
     if (insertError) {
       setError(insertError.message);
@@ -257,7 +257,7 @@ export default function PatientsPage() {
         comuna: editComuna,
         region: editRegion,
         health_insurance: editInsurance,
-      })
+      } as unknown as never)
       .eq("id", editingPatientId);
 
     if (updateError) {

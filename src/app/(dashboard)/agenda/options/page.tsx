@@ -91,7 +91,7 @@ export default function SettingsPage() {
         name,
         slug,
         branding: { ...(tenant?.branding ?? {}), logo_url: nextLogoUrl },
-      })
+      } as unknown as never)
       .eq("id", activeTenantId);
 
     if (updateError) {
