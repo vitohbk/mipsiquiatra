@@ -19,7 +19,7 @@ type BookingRow = {
     deposit_amount_clp: number | null;
     currency: string | null;
   } | null;
-  payments?: { status: string | null } | null;
+  payments?: { status: string | null }[] | { status: string | null } | null;
 };
 
 type PaymentLinkResponse = {
@@ -79,7 +79,12 @@ export default function PaymentLinksPage() {
     load();
   }, [activeTenantId, supabase]);
 
-  const unpaidBookings = bookings.filter((booking) => booking.payments?.status !== "paid");
+  const unpaidBookings = bookings.filter((booking) => {
+    if (Array.isArray(booking.payments)) {
+      return booking.payments[0]?.status !== "paid";
+    }
+    return booking.payments?.status !== "paid";
+  });
   const normalizedQuery = searchTerm.trim().toLowerCase();
   const hasSearch = normalizedQuery.length >= 3;
   const filteredBookings = hasSearch
@@ -168,7 +173,9 @@ export default function PaymentLinksPage() {
                     <div>
                       <p className="text-sm text-[var(--panel-ink)]">{formatBookingLabel(booking)}</p>
                       <p className="text-xs text-[var(--panel-muted)]">
-                        {booking.payments?.status ?? "sin pago"} ·{" "}
+                        {(Array.isArray(booking.payments)
+                          ? booking.payments[0]?.status
+                          : booking.payments?.status) ?? "sin pago"} ·{" "}
                         {amount !== null ? `$${amount.toLocaleString("es-CL")}` : "-"}
                       </p>
                     </div>
