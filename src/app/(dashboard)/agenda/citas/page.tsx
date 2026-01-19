@@ -123,7 +123,7 @@ export default function BookingsPage() {
         supabase
           .from("bookings")
           .select(
-            "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency), payments(status)",
+            "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency)",
           )
           .eq("tenant_id", activeTenantId)
           .neq("status", "cancelled")
@@ -154,7 +154,7 @@ export default function BookingsPage() {
       }
 
       setPaymentStatusMap({});
-      const bookingData = bookingsResult.data;
+      const bookingData = (bookingsResult.data ?? []) as Booking[];
       const serviceData = servicesResult.data;
       const patientData = patientsResult.data;
       const memberData = membersResult.data;
@@ -213,7 +213,32 @@ export default function BookingsPage() {
       }
 
 
-      setBookings((bookingData ?? []) as Booking[]);
+      const paymentIds = bookingData
+        .map((booking) => booking.payment_id)
+        .filter((id): id is string => Boolean(id));
+      let paymentStatusMap = new Map<string, string | null>();
+      if (paymentIds.length > 0) {
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("payments")
+          .select("id, status")
+          .in("id", paymentIds);
+        if (paymentError) {
+          setError(paymentError.message);
+          return;
+        }
+        paymentStatusMap = new Map(
+          (paymentData ?? []).map((payment) => [payment.id, payment.status ?? null]),
+        );
+      }
+
+      setBookings(
+        bookingData.map((booking) => ({
+          ...booking,
+          payments: booking.payment_id
+            ? { status: paymentStatusMap.get(booking.payment_id) ?? null }
+            : null,
+        })),
+      );
       setServices((serviceData ?? []) as Service[]);
       setPatients((patientData ?? []) as Patient[]);
       setProfessionals(professionalList);

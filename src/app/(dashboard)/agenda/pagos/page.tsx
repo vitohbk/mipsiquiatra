@@ -62,7 +62,7 @@ export default function PaymentLinksPage() {
       const { data, error: loadError } = await supabase
         .from("bookings")
         .select(
-          "id, customer_name, customer_email, start_at, status, payment_id, services(name, price_clp, payment_mode, deposit_amount_clp, currency), payments(status)",
+          "id, customer_name, customer_email, start_at, status, payment_id, services(name, price_clp, payment_mode, deposit_amount_clp, currency)",
         )
         .eq("tenant_id", activeTenantId)
         .eq("status", "confirmed")
@@ -73,7 +73,33 @@ export default function PaymentLinksPage() {
         return;
       }
 
-      setBookings(data ?? []);
+      const bookingData = (data ?? []) as BookingRow[];
+      const paymentIds = bookingData
+        .map((booking) => booking.payment_id)
+        .filter((id): id is string => Boolean(id));
+      let paymentStatusMap = new Map<string, string | null>();
+      if (paymentIds.length > 0) {
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("payments")
+          .select("id, status")
+          .in("id", paymentIds);
+        if (paymentError) {
+          setError(paymentError.message);
+          return;
+        }
+        paymentStatusMap = new Map(
+          (paymentData ?? []).map((payment) => [payment.id, payment.status ?? null]),
+        );
+      }
+
+      setBookings(
+        bookingData.map((booking) => ({
+          ...booking,
+          payments: booking.payment_id
+            ? { status: paymentStatusMap.get(booking.payment_id) ?? null }
+            : null,
+        })),
+      );
     };
 
     load();
