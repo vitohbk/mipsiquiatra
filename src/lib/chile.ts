@@ -1,3 +1,5 @@
+import { CHILE_COMUNAS_BY_REGION, CHILE_REGIONS } from "./chile-data";
+
 type RegionApiItem = {
   codigo: string;
   nombre: string;
@@ -49,19 +51,12 @@ export function isValidRut(value: string) {
 }
 
 export async function fetchRegions() {
-  const response = await fetch("/api/chile/regions");
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar regiones");
-  }
-  const data = (await response.json()) as RegionApiItem[];
+  const data = CHILE_REGIONS.map((item) => ({ codigo: item.code, nombre: item.name })) as RegionApiItem[];
   return data.map((item) => ({ code: item.codigo, name: item.nombre })) as ChileRegion[];
 }
 
 export async function fetchComunas(regionCode: string) {
-  const response = await fetch(`/api/chile/comunas?region=${regionCode}`);
-  if (!response.ok) {
-    throw new Error("No se pudieron cargar comunas");
-  }
-  const data = (await response.json()) as ComunaApiItem[];
+  const fallback = CHILE_COMUNAS_BY_REGION[regionCode as keyof typeof CHILE_COMUNAS_BY_REGION] ?? [];
+  const data = fallback.map((item) => ({ codigo: item.code, nombre: item.name })) as ComunaApiItem[];
   return data.map((item) => ({ code: item.codigo, name: item.nombre })) as ChileComuna[];
 }
