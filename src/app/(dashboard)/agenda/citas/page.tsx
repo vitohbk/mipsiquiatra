@@ -108,6 +108,7 @@ export default function BookingsPage() {
   const [paymentModalValue, setPaymentModalValue] = useState("");
   const [paymentModalBooking, setPaymentModalBooking] = useState<Booking | null>(null);
   const [paymentModalMode, setPaymentModalMode] = useState<"paid" | "unpaid">("paid");
+  const [savingCreate, setSavingCreate] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -997,86 +998,96 @@ export default function BookingsPage() {
               onSubmit={async (event) => {
                 event.preventDefault();
                 setError(null);
-
+                if (savingCreate) return;
                 if (!activeTenantId) return;
-                const service = services.find((item) => item.id === createServiceId);
-                const patient = patients.find((item) => item.id === createPatientId);
-                if (!service || !patient) {
-                  setError("Selecciona servicio y paciente.");
-                  return;
-                }
-                if (!createDate || !createTime) {
-                  setError("Selecciona fecha y hora.");
-                  return;
-                }
+                setSavingCreate(true);
 
-                const match = createAvailableSlots.find(
-                  (slot) =>
-                    toTenantDateKey(slot.start_at) === createDate &&
-                    formatTenantTime(slot.start_at) === createTime,
-                );
-                if (!match) {
-                  setError("Selecciona un horario disponible.");
-                  return;
-                }
-
-                const { data: insertedBookingRaw, error: insertError } = await supabase
-                  .from("bookings")
-                  .insert({
-                    tenant_id: activeTenantId,
-                    service_id: service.id,
-                    professional_user_id: createProfessionalId || null,
-                    patient_id: patient.id,
-                    customer_name: `${patient.first_name} ${patient.last_name}`,
-                    customer_email: patient.email,
-                    start_at: match.start_at,
-                    end_at: match.end_at,
-                    status: "confirmed",
-                  } as unknown as never)
-                  .select("id")
-                  .single();
-                const insertedBooking = insertedBookingRaw as { id?: string } | null;
-
-                if (insertError) {
-                  setError(insertError.message);
-                  return;
-                }
-
-                if (insertedBooking?.id) {
-                  try {
-                    await callEdgeFunction(
-                      "booking_notify",
-                      {
-                        booking_id: insertedBooking.id,
-                        customer_email: patient.email,
-                        type: "confirmation",
-                        source: "admin",
-                      },
-                      { disableAuth: true },
-                    );
-                  } catch {
-                    // Best-effort confirmation email for manual bookings.
+                try {
+                  const service = services.find((item) => item.id === createServiceId);
+                  const patient = patients.find((item) => item.id === createPatientId);
+                  if (!service || !patient) {
+                    setError("Selecciona servicio y paciente.");
+                    return;
                   }
-                }
+                  if (!createDate || !createTime) {
+                    setError("Selecciona fecha y hora.");
+                    return;
+                  }
 
-                setBookings((current) => [
-                  {
-                    id: insertedBooking?.id ?? crypto.randomUUID(),
-                    customer_name: `${patient.first_name} ${patient.last_name}`,
-                    customer_email: patient.email ?? "",
-                    start_at: match.start_at,
-                    end_at: match.end_at,
-                    status: "confirmed",
-                    professional_user_id: createProfessionalId || null,
-                    service_id: service.id,
-                    patient_id: patient.id,
-                    payment_id: null,
-                    services: { name: service.name, modality: (service as { modality?: string | null }).modality ?? null },
-                  },
-                  ...current,
-                ]);
-                setCreatePatientQuery("");
-                router.replace("/agenda/citas");
+                  const match = createAvailableSlots.find(
+                    (slot) =>
+                      toTenantDateKey(slot.start_at) === createDate &&
+                      formatTenantTime(slot.start_at) === createTime,
+                  );
+                  if (!match) {
+                    setError("Selecciona un horario disponible.");
+                    return;
+                  }
+
+                  const { data: insertedBookingRaw, error: insertError } = await supabase
+                    .from("bookings")
+                    .insert({
+                      tenant_id: activeTenantId,
+                      service_id: service.id,
+                      professional_user_id: createProfessionalId || null,
+                      patient_id: patient.id,
+                      customer_name: `${patient.first_name} ${patient.last_name}`,
+                      customer_email: patient.email,
+                      start_at: match.start_at,
+                      end_at: match.end_at,
+                      status: "confirmed",
+                    } as unknown as never)
+                    .select("id")
+                    .single();
+                  const insertedBooking = insertedBookingRaw as { id?: string } | null;
+
+                  if (insertError) {
+                    if (insertError.message.includes("bookings_no_overlap")) {
+                      setError("Ese horario ya está reservado. Actualiza la lista y prueba otro.");
+                    } else {
+                      setError(insertError.message);
+                    }
+                    return;
+                  }
+
+                  if (insertedBooking?.id) {
+                    try {
+                      await callEdgeFunction(
+                        "booking_notify",
+                        {
+                          booking_id: insertedBooking.id,
+                          customer_email: patient.email,
+                          type: "confirmation",
+                          source: "admin",
+                        },
+                        { disableAuth: true },
+                      );
+                    } catch {
+                      // Best-effort confirmation email for manual bookings.
+                    }
+                  }
+
+                  setBookings((current) => [
+                    {
+                      id: insertedBooking?.id ?? crypto.randomUUID(),
+                      customer_name: `${patient.first_name} ${patient.last_name}`,
+                      customer_email: patient.email ?? "",
+                      start_at: match.start_at,
+                      end_at: match.end_at,
+                      status: "confirmed",
+                      professional_user_id: createProfessionalId || null,
+                      service_id: service.id,
+                      patient_id: patient.id,
+                      payment_id: null,
+                      services: { name: service.name, modality: (service as { modality?: string | null }).modality ?? null },
+                    },
+                    ...current,
+                  ]);
+                  setCreatePatientQuery("");
+                  router.replace("/agenda/citas");
+                } finally {
+                  setSavingCreate(false);
+                }
               }}
             >
               <label className="text-base">
@@ -1190,7 +1201,7 @@ export default function BookingsPage() {
                 <button
                   className="rounded-xl bg-[var(--page-text)] px-4 py-2 text-sm font-semibold text-[var(--page-bg)]"
                   type="submit"
-                  disabled={createAvailabilityLoading || createAvailableSlots.length === 0}
+                  disabled={savingCreate || createAvailabilityLoading || createAvailableSlots.length === 0}
                 >
                   Crear cita
                 </button>
