@@ -151,9 +151,10 @@ serve(async (req) => {
       }
 
       if (lockResult.data.status !== "active") {
-        return new Response(JSON.stringify({ error: "Lock not active" }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        console.log("mercadopago_webhook: lock not active, attempting recovery", {
+          lockStatus: lockResult.data.status,
+          lockId: lockResult.data.id,
+          lockToken,
         });
       }
 

@@ -72,7 +72,7 @@ function addDays(date: Date, amount: number) {
 }
 
 function formatLocalDate(date: Date) {
-  return date.toLocaleDateString("es-CL", { dateStyle: "full", timeZone: "UTC" });
+  return date.toLocaleDateString("es-CL", { dateStyle: "full", timeZone: "America/Santiago" });
 }
 
 function normalizeUtcDate(date: Date) {
@@ -486,7 +486,10 @@ export default function PublicBookingPage() {
                     </svg>
                     <span>
                       {selectedSlot
-                        ? new Date(selectedSlot.start_at).toLocaleTimeString("es-CL", { timeStyle: "short" })
+                        ? new Date(selectedSlot.start_at).toLocaleTimeString("es-CL", {
+                          timeStyle: "short",
+                          timeZone: "America/Santiago",
+                        })
                         : "Selecciona una hora"}
                     </span>
                   </div>
@@ -515,11 +518,16 @@ export default function PublicBookingPage() {
                           <p className="font-medium">
                             Próxima disponibilidad:{" "}
                             {new Date(nextAvailableSlot.start_at)
-                              .toLocaleDateString("es-CL", { weekday: "long", day: "numeric" })
+                              .toLocaleDateString("es-CL", {
+                                weekday: "long",
+                                day: "numeric",
+                                timeZone: "America/Santiago",
+                              })
                               .replace(",", "")}
                             ,{" "}
                             {new Date(nextAvailableSlot.start_at).toLocaleString("es-CL", {
                               timeStyle: "short",
+                              timeZone: "America/Santiago",
                             })}
                           </p>
                           <button
@@ -648,7 +656,10 @@ export default function PublicBookingPage() {
                                 className="rounded-full border border-[var(--brand-border)] bg-white px-4 py-2 text-left text-base transition-all duration-300 ease-out hover:bg-[var(--brand-soft)]"
                                 onClick={() => setSelectedSlot(isSelected ? null : slot)}
                               >
-                                {new Date(slot.start_at).toLocaleString("es-CL", { timeStyle: "short" })}
+                                {new Date(slot.start_at).toLocaleString("es-CL", {
+                                  timeStyle: "short",
+                                  timeZone: "America/Santiago",
+                                })}
                               </button>
                               <button
                                 type="button"

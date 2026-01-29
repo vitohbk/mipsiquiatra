@@ -31,6 +31,7 @@ function formatBookingLabel(booking: BookingRow) {
   const dateLabel = new Date(booking.start_at).toLocaleString("es-CL", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "America/Santiago",
   });
   const serviceName = booking.services?.name ?? "Servicio";
   const customer = booking.customer_name ?? booking.customer_email ?? "Paciente";
