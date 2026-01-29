@@ -24,7 +24,7 @@ export function buildBookingEmail(payload: NotifyPayload) {
   const formattedDate = formatDateTime(payload.start_at, timezone);
   const tenantName = payload.tenant_name ?? "Nuestro equipo";
   const serviceName = payload.service_name ?? "tu atención";
-  const greetingName = tenantName;
+  const greetingName = payload.customer_name?.trim() || "hola";
   const isAdminBooking = payload.source === "admin";
 
   const subjectMap: Record<NotifyPayload["type"], string> = {
