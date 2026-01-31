@@ -58,11 +58,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6 md:hidden">
             <button
               type="button"
-              className="absolute inset-0"
+              className="absolute inset-0 z-0"
               aria-label="Cerrar menú"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="w-full max-w-sm rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-center shadow-xl">
+            <div className="relative z-10 w-full max-w-sm rounded-3xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 text-center shadow-xl">
               <div className="flex items-center justify-between">
                 <p className="text-xs uppercase tracking-[0.35em] text-[var(--brand-copper)]">Menú</p>
                 <button

@@ -40,7 +40,8 @@ serve(async (req) => {
     const type = payload.type ?? payload.topic ?? "";
     const dataId = payload.data?.id ?? payload.id ?? null;
 
-    if (!dataId || (type && type !== "payment")) {
+    const allowedTypes = new Set(["payment", "payment.created", "payment.updated"]);
+    if (!dataId || (type && !allowedTypes.has(type))) {
       return new Response(JSON.stringify({ status: "ignored" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
