@@ -2,26 +2,28 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function getWebhookUrl() {
+function getWebhookConfig() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   if (!supabaseUrl || !anonKey) {
     return null;
   }
   const base = supabaseUrl.replace(/\/$/, "");
-  return `${base}/functions/v1/mercadopago_webhook?apikey=${encodeURIComponent(anonKey)}`;
+  return { url: `${base}/functions/v1/mercadopago_webhook`, anonKey };
 }
 
 async function forwardToWebhook(payload: unknown) {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl) {
+  const config = getWebhookConfig();
+  if (!config) {
     return NextResponse.json({ error: "Missing Supabase webhook config" }, { status: 500 });
   }
 
-  const response = await fetch(webhookUrl, {
+  const response = await fetch(config.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${config.anonKey}`,
+      apikey: config.anonKey,
     },
     body: JSON.stringify(payload),
   });
