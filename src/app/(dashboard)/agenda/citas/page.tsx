@@ -85,8 +85,12 @@ export default function BookingsPage() {
   const [createDate, setCreateDate] = useState("");
   const [createTime, setCreateTime] = useState("");
   const [createAvailableSlots, setCreateAvailableSlots] = useState<Slot[]>([]);
+  const [createAvailableDates, setCreateAvailableDates] = useState<string[]>([]);
+  const [createAvailableDatesByMonth, setCreateAvailableDatesByMonth] = useState<Record<string, string[]>>({});
+  const [createDatesLoading, setCreateDatesLoading] = useState(false);
   const [createAvailabilityLoading, setCreateAvailabilityLoading] = useState(false);
   const [createAvailabilityLink, setCreateAvailabilityLink] = useState<BookingLink | null>(null);
+  const [createMonthCursor, setCreateMonthCursor] = useState<Date>(new Date());
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   const [editPatientId, setEditPatientId] = useState("");
   const [editPatientQuery, setEditPatientQuery] = useState("");
@@ -319,13 +323,16 @@ export default function BookingsPage() {
     return booking.payments?.status === "paid";
   };
 
-  const toTenantDateKey = (iso: string) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: tenantTimezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(iso));
+  const toTenantDateKey = useCallback(
+    (iso: string) =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: tenantTimezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(iso)),
+    [tenantTimezone],
+  );
 
   const formatTenantTime = useCallback(
     (iso: string) =>
@@ -337,6 +344,57 @@ export default function BookingsPage() {
       }).format(new Date(iso)),
     [tenantTimezone],
   );
+
+  const formatDateKey = (date: Date) => date.toISOString().slice(0, 10);
+  const addDays = (date: Date, amount: number) => new Date(date.getTime() + amount * 24 * 60 * 60 * 1000);
+  const startOfMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  const endOfMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0));
+  const addMonths = (date: Date, amount: number) =>
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1));
+  const monthKey = (date: Date) =>
+    `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+
+  const loadCreateDateOptions = useCallback(async (link: BookingLink, monthCursor: Date) => {
+    if (!link.slug && !link.public_token) {
+      setCreateAvailableDates([]);
+      setCreateAvailableDatesByMonth({});
+      return;
+    }
+    setCreateDatesLoading(true);
+    try {
+      const monthStart = startOfMonth(monthCursor);
+      const monthEnd = endOfMonth(monthCursor);
+      const monthId = monthKey(monthStart);
+      if (createAvailableDatesByMonth[monthId]) {
+        return;
+      }
+      const availability = await callEdgeFunction<{ slots: Slot[] }>(
+        "public_availability",
+        {
+          slug: link.slug ?? undefined,
+          public_token: link.public_token ?? undefined,
+          start_date: formatDateKey(monthStart),
+          end_date: formatDateKey(monthEnd),
+        },
+        { disableAuth: true },
+      );
+      const dateSet = new Set((availability.slots ?? []).map((slot) => toTenantDateKey(slot.start_at)));
+      const sortedDates = Array.from(dateSet).sort((a, b) => a.localeCompare(b));
+      setCreateAvailableDatesByMonth((current) => ({ ...current, [monthId]: sortedDates }));
+      setCreateAvailableDates((current) => {
+        const next = new Set([...current, ...sortedDates]);
+        return Array.from(next).sort((a, b) => a.localeCompare(b));
+      });
+      if (!createDate && sortedDates.length > 0) {
+        setCreateDate(sortedDates[0]);
+        setCreateMonthCursor(new Date(`${sortedDates[0]}T12:00:00Z`));
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "No se pudo cargar disponibilidad.");
+    } finally {
+      setCreateDatesLoading(false);
+    }
+  }, [createAvailableDatesByMonth, createDate, toTenantDateKey]);
 
   const loadCreateAvailability = useCallback(async (link: BookingLink, dateStr: string) => {
     setCreateAvailabilityLoading(true);
@@ -429,10 +487,25 @@ export default function BookingsPage() {
       if (createDate) {
         await loadCreateAvailability(nextLink, createDate);
       }
+      await loadCreateDateOptions(nextLink, createMonthCursor);
     };
 
     loadCreateLink();
-  }, [activeTenantId, createServiceId, createProfessionalId, createDate, supabase, services, loadCreateAvailability]);
+  }, [
+    activeTenantId,
+    createServiceId,
+    createProfessionalId,
+    createDate,
+    createMonthCursor,
+    supabase,
+    services,
+    loadCreateAvailability,
+    loadCreateDateOptions,
+  ]);
+  useEffect(() => {
+    if (!createAvailabilityLink) return;
+    loadCreateDateOptions(createAvailabilityLink, createMonthCursor);
+  }, [createAvailabilityLink, createMonthCursor, loadCreateDateOptions]);
 
   const todayKey = toTenantDateKey(new Date().toISOString());
   const filteredBookings = bookings.filter((booking) => {
@@ -450,6 +523,19 @@ export default function BookingsPage() {
     }
     return acc;
   }, new Map<string, Booking[]>());
+
+  const createAvailableDateSet = useMemo(() => {
+    const all = Object.values(createAvailableDatesByMonth).flat();
+    return new Set(all);
+  }, [createAvailableDatesByMonth]);
+  const todayDate = new Date();
+  const maxDateLimit = formatDateKey(addDays(todayDate, 45));
+  const minCreateMonth = todayKey.slice(0, 7);
+  const maxCreateMonth = maxDateLimit.slice(0, 7);
+  const calendarMonthStart = startOfMonth(createMonthCursor);
+  const calendarMonthEnd = endOfMonth(createMonthCursor);
+  const calendarMonthDays = calendarMonthEnd.getUTCDate();
+  const calendarFirstWeekday = calendarMonthStart.getUTCDay();
 
   const sortedGroups = Array.from(groupedBookings.entries()).sort(([aKey, aItems], [bKey, bItems]) => {
     if (activeTab !== "future" || futureSort === "start_at") {
@@ -1179,19 +1265,87 @@ export default function BookingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-base">
                   Fecha
-                  <input
-                    className="mt-2 w-full rounded-xl border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-base"
-                    type="date"
-                    value={createDate}
-                    onChange={(event) => {
-                      const nextDate = event.target.value;
-                      setCreateDate(nextDate);
-                      if (nextDate && createAvailabilityLink) {
-                        loadCreateAvailability(createAvailabilityLink, nextDate);
-                      }
-                    }}
-                    required
-                  />
+                  <div className="mt-2 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-soft)] p-3">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        className="rounded-full border border-[var(--panel-border)] px-2 py-1 text-xs text-[var(--panel-muted)] disabled:opacity-40"
+                        onClick={() => setCreateMonthCursor(addMonths(createMonthCursor, -1))}
+                        disabled={!minCreateMonth || monthKey(addMonths(createMonthCursor, -1)) < minCreateMonth}
+                      >
+                        ‹
+                      </button>
+                      <span className="text-sm font-semibold text-[var(--page-text)]">
+                        {createMonthCursor.toLocaleDateString("es-CL", {
+                          month: "long",
+                          year: "numeric",
+                          timeZone: tenantTimezone,
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded-full border border-[var(--panel-border)] px-2 py-1 text-xs text-[var(--panel-muted)] disabled:opacity-40"
+                        onClick={() => setCreateMonthCursor(addMonths(createMonthCursor, 1))}
+                        disabled={!maxCreateMonth || monthKey(addMonths(createMonthCursor, 1)) > maxCreateMonth}
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] uppercase text-[var(--panel-muted)]">
+                      {["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"].map((label) => (
+                        <div key={label}>{label}</div>
+                      ))}
+                      {Array.from({ length: calendarFirstWeekday }).map((_, idx) => (
+                        <div key={`empty-${idx}`} />
+                      ))}
+                      {Array.from({ length: calendarMonthDays }).map((_, idx) => {
+                        const day = idx + 1;
+                        const date = new Date(
+                          Date.UTC(
+                            createMonthCursor.getUTCFullYear(),
+                            createMonthCursor.getUTCMonth(),
+                            day,
+                            12,
+                            0,
+                            0,
+                          ),
+                        );
+                        const dateKey = toTenantDateKey(date.toISOString());
+                        const hasAvailability = createAvailableDateSet.has(dateKey);
+                        const isPast = dateKey < todayKey;
+                        const isBeyondLimit = dateKey > maxDateLimit;
+                        const disabled = !hasAvailability || isPast || isBeyondLimit;
+                        const isSelected = dateKey === createDate;
+                        return (
+                          <button
+                            key={`day-${dateKey}`}
+                            type="button"
+                            disabled={disabled}
+                            className={`rounded-full px-2 py-1 text-xs transition ${
+                              isSelected
+                                ? "bg-[var(--brand-ink)] text-white"
+                                : hasAvailability
+                                ? "bg-white text-[var(--page-text)] hover:bg-[var(--panel-border)]"
+                                : "text-[var(--panel-muted)]/40"
+                            } ${disabled ? "cursor-not-allowed" : ""}`}
+                            onClick={() => {
+                              setCreateDate(dateKey);
+                              if (createAvailabilityLink) {
+                                loadCreateAvailability(createAvailabilityLink, dateKey);
+                              }
+                            }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {createDatesLoading ? (
+                    <p className="mt-2 text-xs text-[var(--panel-muted)]">Cargando fechas...</p>
+                  ) : createAvailableDates.length === 0 ? (
+                    <p className="mt-2 text-xs text-[var(--panel-muted)]">Sin fechas disponibles.</p>
+                  ) : null}
                 </label>
                 <label className="text-base">
                   Hora disponible
