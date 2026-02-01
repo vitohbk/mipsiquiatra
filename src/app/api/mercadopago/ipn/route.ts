@@ -45,6 +45,11 @@ export async function POST(req: Request) {
       payload = { raw };
     }
   }
+  const parsed = payload as { data?: { id?: string } } | null;
+  const id = parsed?.data?.id ?? null;
+  if (!id) {
+    return NextResponse.json({ status: "ok" }, { status: 200 });
+  }
   return forwardToWebhook(payload ?? {});
 }
 
@@ -54,8 +59,8 @@ export async function GET(req: Request) {
   const topic = searchParams.get("topic");
   const type = searchParams.get("type") ?? topic;
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  if (!id || id === "123456") {
+    return NextResponse.json({ status: "ok" }, { status: 200 });
   }
 
   const payload = {
