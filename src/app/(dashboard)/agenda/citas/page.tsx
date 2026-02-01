@@ -10,6 +10,7 @@ type Booking = {
   id: string;
   customer_name: string;
   customer_email: string;
+  created_at?: string | null;
   start_at: string;
   end_at: string;
   status: string;
@@ -104,6 +105,7 @@ export default function BookingsPage() {
   } | null>(null);
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"future" | "past">("future");
+  const [futureSort, setFutureSort] = useState<"start_at" | "created_at">("start_at");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentModalValue, setPaymentModalValue] = useState("");
   const [paymentModalBooking, setPaymentModalBooking] = useState<Booking | null>(null);
@@ -124,7 +126,7 @@ export default function BookingsPage() {
         supabase
           .from("bookings")
           .select(
-            "id, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency)",
+            "id, created_at, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency)",
           )
           .eq("tenant_id", activeTenantId)
           .neq("status", "cancelled")
@@ -449,6 +451,20 @@ export default function BookingsPage() {
     return acc;
   }, new Map<string, Booking[]>());
 
+  const sortedGroups = Array.from(groupedBookings.entries()).sort(([aKey, aItems], [bKey, bItems]) => {
+    if (activeTab !== "future" || futureSort === "start_at") {
+      return aKey.localeCompare(bKey);
+    }
+    const maxCreatedAt = (items: Booking[]) =>
+      Math.max(
+        ...items.map((item) => {
+          const value = item.created_at ?? item.start_at;
+          return new Date(value).getTime();
+        }),
+      );
+    return maxCreatedAt(bItems) - maxCreatedAt(aItems);
+  });
+
   const loadAvailability = async (
     link: { slug: string | null; public_token: string | null },
     dateStr: string,
@@ -676,6 +692,19 @@ export default function BookingsPage() {
         >
           Citas pasadas
         </button>
+        {activeTab === "future" ? (
+          <label className="ml-auto flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[var(--panel-muted)]">
+            Ordenar
+            <select
+              className="rounded-full border border-[var(--panel-border)] bg-[var(--panel-soft)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--page-text)]"
+              value={futureSort}
+              onChange={(event) => setFutureSort(event.target.value as "start_at" | "created_at")}
+            >
+              <option value="start_at">Próximas primero</option>
+              <option value="created_at">Últimas creadas</option>
+            </select>
+          </label>
+        ) : null}
       </div>
 
       <div className="space-y-3">
@@ -683,17 +712,19 @@ export default function BookingsPage() {
           <p className="text-sm text-[var(--panel-muted)]">Sin citas aun.</p>
         ) : (
           <div className="space-y-3">
-            {Array.from(groupedBookings.entries())
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([dateKey, items]) => (
+            {sortedGroups.map(([dateKey, items]) => (
               <div key={dateKey} className="space-y-3">
                 <h3 className="text-base font-semibold">{formatDateLabel(dateKey)}</h3>
                 <div className="space-y-3">
                   {items
-                    .sort(
-                      (a, b) =>
-                        new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
-                    )
+                    .sort((a, b) => {
+                      if (activeTab === "future" && futureSort === "created_at") {
+                        const aValue = a.created_at ?? a.start_at;
+                        const bValue = b.created_at ?? b.start_at;
+                        return new Date(bValue).getTime() - new Date(aValue).getTime();
+                      }
+                      return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+                    })
                     .map((booking) => {
                     const isPaid = isPaymentPaid(booking);
                     return (
@@ -1067,12 +1098,13 @@ export default function BookingsPage() {
                     }
                   }
 
-                  setBookings((current) => [
-                    {
-                      id: insertedBooking?.id ?? crypto.randomUUID(),
-                      customer_name: `${patient.first_name} ${patient.last_name}`,
-                      customer_email: patient.email ?? "",
-                      start_at: match.start_at,
+                setBookings((current) => [
+                  {
+                    id: insertedBooking?.id ?? crypto.randomUUID(),
+                    created_at: new Date().toISOString(),
+                    customer_name: `${patient.first_name} ${patient.last_name}`,
+                    customer_email: patient.email ?? "",
+                    start_at: match.start_at,
                       end_at: match.end_at,
                       status: "confirmed",
                       professional_user_id: createProfessionalId || null,
