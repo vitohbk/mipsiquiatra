@@ -183,31 +183,31 @@ serve(async (req) => {
 
     const requiresPayment = service.requires_payment !== false;
 
-    const { data: patientUpsert, error: patientError } = await admin.from("patients").upsert(
-      {
-        tenant_id: bookingLink.tenant_id,
-        first_name: patient.first_name,
-        last_name: patient.last_name,
-        rut: patient.rut,
-        birth_date: patient.birth_date,
-        email: patient.email,
-        phone: patient.phone,
-        address_line: patient.address_line,
-        comuna: patient.comuna,
-        region: patient.region,
-        health_insurance: patient.health_insurance,
-      },
-      { onConflict: "tenant_id,rut" },
-    ).select("id").single();
-
-    if (patientError || !patientUpsert) {
-      return new Response(JSON.stringify({ error: patientError?.message ?? "Patient upsert failed" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     if (!requiresPayment) {
+      const { data: patientUpsert, error: patientError } = await admin.from("patients").upsert(
+        {
+          tenant_id: bookingLink.tenant_id,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          rut: patient.rut,
+          birth_date: patient.birth_date,
+          email: patient.email,
+          phone: patient.phone,
+          address_line: patient.address_line,
+          comuna: patient.comuna,
+          region: patient.region,
+          health_insurance: patient.health_insurance,
+        },
+        { onConflict: "tenant_id,rut" },
+      ).select("id").single();
+
+      if (patientError || !patientUpsert) {
+        return new Response(JSON.stringify({ error: patientError?.message ?? "Patient upsert failed" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const bookingInsert = await admin.from("bookings").insert({
         tenant_id: bookingLink.tenant_id,
         service_id: bookingLink.service_id,
@@ -247,7 +247,7 @@ serve(async (req) => {
       tenant_id: bookingLink.tenant_id,
       service_id: bookingLink.service_id,
       professional_user_id: bookingLink.professional_user_id,
-      patient_id: patientUpsert.id,
+      patient_id: null,
       customer_name: payload.customer_name,
       customer_email: payload.customer_email,
       start_at: startAt.toISOString(),
@@ -270,7 +270,7 @@ serve(async (req) => {
         tenant_id: bookingLink.tenant_id,
         service_id: bookingLink.service_id,
         professional_user_id: bookingLink.professional_user_id,
-        patient_id: patientUpsert.id,
+        patient_id: null,
         customer_name: payload.customer_name,
         customer_email: payload.customer_email,
         start_at: startAt.toISOString(),
@@ -317,6 +317,18 @@ serve(async (req) => {
       status: "pending",
       raw_response: {
         lock_token: lockToken,
+        patient: {
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          rut: patient.rut,
+          birth_date: patient.birth_date,
+          email: patient.email,
+          phone: patient.phone,
+          address_line: patient.address_line,
+          comuna: patient.comuna,
+          region: patient.region,
+          health_insurance: patient.health_insurance,
+        },
       },
     }).select("id").single();
 

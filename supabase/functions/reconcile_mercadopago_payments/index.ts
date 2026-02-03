@@ -132,6 +132,7 @@ serve(async (req) => {
 
       const lockToken = mpPayment.metadata?.lock_token ?? payment.raw_response?.lock_token ?? null;
       const bookingId = mpPayment.metadata?.booking_id ?? payment.raw_response?.booking_id ?? null;
+      const patientPayload = payment.raw_response?.patient ?? null;
 
       if (bookingId) {
         await admin.from("bookings").update({ payment_id: payment.id }).eq("id", bookingId);
@@ -139,7 +140,10 @@ serve(async (req) => {
           status: "paid",
           paid_at: new Date().toISOString(),
           provider_reference: String(mpPayment.id),
-          raw_response: mpPayment,
+          raw_response: {
+            ...(payment.raw_response ?? {}),
+            mp_payment: mpPayment,
+          },
         }).eq("id", payment.id);
         confirmed += 1;
         continue;
@@ -163,11 +167,40 @@ serve(async (req) => {
         continue;
       }
 
+      if (!patientPayload) {
+        console.log("reconcile_mp: missing patient payload", { paymentId: payment.id });
+        failed += 1;
+        continue;
+      }
+
+      const { data: patientUpsert, error: patientError } = await admin.from("patients").upsert(
+        {
+          tenant_id: lockResult.data.tenant_id,
+          first_name: patientPayload.first_name,
+          last_name: patientPayload.last_name,
+          rut: patientPayload.rut,
+          birth_date: patientPayload.birth_date,
+          email: patientPayload.email,
+          phone: patientPayload.phone,
+          address_line: patientPayload.address_line,
+          comuna: patientPayload.comuna,
+          region: patientPayload.region,
+          health_insurance: patientPayload.health_insurance,
+        },
+        { onConflict: "tenant_id,rut" },
+      ).select("id").single();
+
+      if (patientError || !patientUpsert) {
+        console.log("reconcile_mp: patient upsert failed", { paymentId: payment.id, error: patientError?.message });
+        failed += 1;
+        continue;
+      }
+
       const bookingInsert = await admin.from("bookings").insert({
         tenant_id: lockResult.data.tenant_id,
         service_id: lockResult.data.service_id,
         professional_user_id: lockResult.data.professional_user_id,
-        patient_id: lockResult.data.patient_id,
+        patient_id: patientUpsert.id,
         customer_name: lockResult.data.customer_name,
         customer_email: lockResult.data.customer_email,
         start_at: lockResult.data.start_at,
@@ -187,7 +220,10 @@ serve(async (req) => {
         status: "paid",
         paid_at: new Date().toISOString(),
         provider_reference: String(mpPayment.id),
-        raw_response: mpPayment,
+        raw_response: {
+          ...(payment.raw_response ?? {}),
+          mp_payment: mpPayment,
+        },
       }).eq("id", payment.id);
 
       if (supabaseUrl && serviceRoleKey) {

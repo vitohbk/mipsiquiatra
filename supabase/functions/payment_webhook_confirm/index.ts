@@ -111,6 +111,7 @@ serve(async (req) => {
     }
 
     const lockToken = payload.lock_token?.toString() ?? payment.raw_response?.lock_token;
+    const patientPayload = payment.raw_response?.patient ?? null;
     const amount = Number(payload.amount_clp ?? payment.amount_clp);
 
     if (Number.isNaN(amount)) {
@@ -156,11 +157,42 @@ serve(async (req) => {
         });
       }
 
+      if (!patientPayload) {
+        return new Response(JSON.stringify({ error: "Missing patient payload" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: patientUpsert, error: patientError } = await admin.from("patients").upsert(
+        {
+          tenant_id: lockResult.data.tenant_id,
+          first_name: patientPayload.first_name,
+          last_name: patientPayload.last_name,
+          rut: patientPayload.rut,
+          birth_date: patientPayload.birth_date,
+          email: patientPayload.email,
+          phone: patientPayload.phone,
+          address_line: patientPayload.address_line,
+          comuna: patientPayload.comuna,
+          region: patientPayload.region,
+          health_insurance: patientPayload.health_insurance,
+        },
+        { onConflict: "tenant_id,rut" },
+      ).select("id").single();
+
+      if (patientError || !patientUpsert) {
+        return new Response(JSON.stringify({ error: patientError?.message ?? "Patient upsert failed" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const bookingInsert = await admin.from("bookings").insert({
         tenant_id: lockResult.data.tenant_id,
         service_id: lockResult.data.service_id,
         professional_user_id: lockResult.data.professional_user_id,
-        patient_id: lockResult.data.patient_id,
+        patient_id: patientUpsert.id,
         customer_name: lockResult.data.customer_name,
         customer_email: lockResult.data.customer_email,
         start_at: lockResult.data.start_at,
@@ -181,7 +213,10 @@ serve(async (req) => {
         status: "paid",
         paid_at: new Date().toISOString(),
         provider_reference: providerReference ?? payment.raw_response?.provider_reference ?? null,
-        raw_response: payload,
+        raw_response: {
+          ...(payment.raw_response ?? {}),
+          webpay_payload: payload,
+        },
       }).eq("id", payment.id);
 
       if (supabaseUrl && serviceRoleKey) {
@@ -213,7 +248,10 @@ serve(async (req) => {
     await admin.from("payments").update({
       status: status === "failed" ? "failed" : "expired",
       provider_reference: providerReference ?? payment.raw_response?.provider_reference ?? null,
-      raw_response: payload,
+      raw_response: {
+        ...(payment.raw_response ?? {}),
+        webpay_payload: payload,
+      },
     }).eq("id", payment.id);
 
     if (lockToken) {
