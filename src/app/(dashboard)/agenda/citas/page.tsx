@@ -90,7 +90,10 @@ export default function BookingsPage() {
   const [createDatesLoading, setCreateDatesLoading] = useState(false);
   const [createAvailabilityLoading, setCreateAvailabilityLoading] = useState(false);
   const [createAvailabilityLink, setCreateAvailabilityLink] = useState<BookingLink | null>(null);
-  const [createMonthCursor, setCreateMonthCursor] = useState<Date>(new Date());
+  const [createMonthCursor, setCreateMonthCursor] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 12, 0, 0));
+  });
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   const [editPatientId, setEditPatientId] = useState("");
   const [editPatientQuery, setEditPatientQuery] = useState("");
@@ -347,10 +350,10 @@ export default function BookingsPage() {
 
   const formatDateKey = (date: Date) => date.toISOString().slice(0, 10);
   const addDays = (date: Date, amount: number) => new Date(date.getTime() + amount * 24 * 60 * 60 * 1000);
-  const startOfMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  const startOfMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 12, 0, 0));
   const endOfMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0));
   const addMonths = (date: Date, amount: number) =>
-    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1));
+    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1, 12, 0, 0));
   const monthKey = (date: Date) =>
     `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 
@@ -1279,7 +1282,7 @@ export default function BookingsPage() {
                         {createMonthCursor.toLocaleDateString("es-CL", {
                           month: "long",
                           year: "numeric",
-                          timeZone: tenantTimezone,
+                          timeZone: "UTC",
                         })}
                       </span>
                       <button
