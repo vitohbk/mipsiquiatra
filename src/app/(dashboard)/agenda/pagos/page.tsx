@@ -46,6 +46,14 @@ function resolveAmount(booking: BookingRow) {
     : service.price_clp;
 }
 
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export default function PaymentLinksPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { activeTenantId } = useActiveTenant();
@@ -66,7 +74,7 @@ export default function PaymentLinksPage() {
           "id, customer_name, customer_email, start_at, status, payment_id, services(name, price_clp, payment_mode, deposit_amount_clp, currency)",
         )
         .eq("tenant_id", activeTenantId)
-        .eq("status", "confirmed")
+        .neq("status", "cancelled")
         .order("start_at", { ascending: true });
 
       if (loadError) {
@@ -112,11 +120,11 @@ export default function PaymentLinksPage() {
     }
     return booking.payments?.status !== "paid";
   });
-  const normalizedQuery = searchTerm.trim().toLowerCase();
+  const normalizedQuery = normalizeSearchText(searchTerm);
   const hasSearch = normalizedQuery.length >= 3;
   const filteredBookings = hasSearch
     ? unpaidBookings.filter((booking) =>
-        formatBookingLabel(booking).toLowerCase().includes(normalizedQuery),
+        normalizeSearchText(formatBookingLabel(booking)).includes(normalizedQuery),
       )
     : [];
   const selectedBookings = filteredBookings.filter((booking) => selectedBookingIds.includes(booking.id));
@@ -127,12 +135,19 @@ export default function PaymentLinksPage() {
     setError(null);
     setLoading(true);
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const authToken = sessionData.session?.access_token ?? null;
+      if (sessionError || !authToken) {
+        throw new Error("No hay sesión activa.");
+      }
       const results = await Promise.all(
         selectedBookingIds.map(async (bookingId) => ({
           bookingId,
-          result: await callEdgeFunction<PaymentLinkResponse>("create_booking_payment_link", {
-            booking_id: bookingId,
-          }),
+          result: await callEdgeFunction<PaymentLinkResponse>(
+            "create_booking_payment_link",
+            { booking_id: bookingId, auth_token: authToken },
+            { disableAuth: true },
+          ),
         })),
       );
       setPaymentLinks((current) => {

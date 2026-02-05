@@ -6,6 +6,7 @@ const mpAccessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") ?? "";
 const mpWebhookUrl = Deno.env.get("MERCADOPAGO_WEBHOOK_URL") ?? "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const mpSandbox = (Deno.env.get("MERCADOPAGO_SANDBOX") ?? "false").toLowerCase() === "true";
+const allowedRoles = ["owner", "admin", "staff"] as const;
 
 function parseReturnUrl(value: string | null) {
   if (!value) return null;
@@ -48,6 +49,26 @@ serve(async (req) => {
     }
 
     const admin = createAdminClient();
+    const authHeader = req.headers.get("Authorization");
+    const tokenFromHeader = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const tokenFromBody = typeof payload.auth_token === "string" ? payload.auth_token : null;
+    const token = tokenFromBody ?? tokenFromHeader;
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: authData, error: authError } = await admin.auth.getUser(token);
+    const userId = authData?.user?.id ?? null;
+    if (authError || !userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: booking, error: bookingError } = await admin
       .from("bookings")
       .select(
@@ -66,6 +87,33 @@ serve(async (req) => {
     if (booking.status === "cancelled") {
       return new Response(JSON.stringify({ error: "Booking is cancelled" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: membership, error: membershipError } = await admin
+      .from("memberships")
+      .select("role, secondary_role")
+      .eq("tenant_id", booking.tenant_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (membershipError) {
+      return new Response(JSON.stringify({ error: membershipError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const role = membership?.role ?? null;
+    const secondaryRole = membership?.secondary_role ?? null;
+    const canManage =
+      (role && allowedRoles.includes(role as (typeof allowedRoles)[number])) ||
+      (secondaryRole && allowedRoles.includes(secondaryRole as (typeof allowedRoles)[number]));
+
+    if (!canManage) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
