@@ -532,7 +532,7 @@ export default function BookingsPage() {
     return new Set(all);
   }, [createAvailableDatesByMonth]);
   const todayDate = new Date();
-  const maxDateLimit = formatDateKey(addDays(todayDate, 45));
+  const maxDateLimit = formatDateKey(addDays(todayDate, 62));
   const minCreateMonth = todayKey.slice(0, 7);
   const maxCreateMonth = maxDateLimit.slice(0, 7);
   const calendarMonthStart = startOfMonth(createMonthCursor);
@@ -1095,12 +1095,12 @@ export default function BookingsPage() {
       </div>
       {searchParams.get("create") === "1" ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => router.replace("/agenda/citas")}
           role="presentation"
         >
           <div
-            className="w-full max-w-xl rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
+            className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">

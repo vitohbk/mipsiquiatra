@@ -361,12 +361,12 @@ export default function UsersPage() {
       </div>
       {editingMember ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => setEditingMember(null)}
           role="presentation"
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -875,12 +875,12 @@ export default function UsersPage() {
       ) : null}
       {searchParams.get("create") === "1" ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => router.replace("/agenda/users")}
           role="presentation"
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">

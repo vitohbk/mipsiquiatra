@@ -3,7 +3,7 @@ import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase.ts";
 import { assertString } from "../_shared/validation.ts";
 
-const MAX_RANGE_DAYS = 31;
+const MAX_RANGE_DAYS = 62;
 
 function parseDate(value: string, field: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {

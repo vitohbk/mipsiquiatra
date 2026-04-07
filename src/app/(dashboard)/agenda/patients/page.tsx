@@ -369,12 +369,12 @@ export default function PatientsPage() {
       </div>
       {editingPatientId ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => setEditingPatientId(null)}
           role="presentation"
         >
           <div
-            className="w-full max-w-3xl rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
+            className="w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -542,12 +542,12 @@ export default function PatientsPage() {
       ) : null}
       {searchParams.get("create") === "1" ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-6"
           onClick={() => router.replace("/agenda/patients")}
           role="presentation"
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">
