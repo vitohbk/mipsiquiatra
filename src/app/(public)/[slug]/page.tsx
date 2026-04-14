@@ -130,8 +130,8 @@ export default function PublicBookingPage() {
   const [monthCursor, setMonthCursor] = useState<Date>(new Date());
   const [monthAvailability, setMonthAvailability] = useState<Record<string, number>>({});
   const [autoSelectFirstSlot, setAutoSelectFirstSlot] = useState(false);
-  const autoSelectedDateRef = useRef(false);
   const [initialSlotsLoaded, setInitialSlotsLoaded] = useState(false);
+  const patientLookupRequestRef = useRef(0);
 
   useEffect(() => {
     const load = async () => {
@@ -187,12 +187,6 @@ export default function PublicBookingPage() {
 
         setNextAvailableSlot(nextSlot);
 
-        if (!autoSelectedDateRef.current && nextSlot) {
-          const nextDate = normalizeUtcDate(new Date(nextSlot.start_at));
-          setSelectedDate(nextDate);
-          setMonthCursor(startOfMonth(nextDate));
-          autoSelectedDateRef.current = true;
-        }
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
       }
@@ -339,6 +333,8 @@ export default function PublicBookingPage() {
     const normalized = formatRut(value);
     if (!isValidRut(normalized)) return;
 
+    const requestId = patientLookupRequestRef.current + 1;
+    patientLookupRequestRef.current = requestId;
     setPatientLoading(true);
     setPatientLookupError(null);
 
@@ -351,7 +347,9 @@ export default function PublicBookingPage() {
         },
         { disableAuth: true },
       );
-      if (result.patients.length > 0) {
+      const currentRut = formatRut(rut);
+      const isLatestRequest = patientLookupRequestRef.current === requestId;
+      if (isLatestRequest && currentRut === normalized && result.patients.length > 0) {
         const patient = result.patients[0];
         setFirstName(patient.first_name);
         setLastName(patient.last_name);
@@ -367,7 +365,9 @@ export default function PublicBookingPage() {
     } catch (lookupError) {
       setPatientLookupError(lookupError instanceof Error ? lookupError.message : "Error buscando paciente");
     } finally {
-      setPatientLoading(false);
+      if (patientLookupRequestRef.current === requestId) {
+        setPatientLoading(false);
+      }
     }
   };
 

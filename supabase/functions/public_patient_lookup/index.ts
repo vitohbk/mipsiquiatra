@@ -40,7 +40,7 @@ serve(async (req) => {
       });
     }
 
-    const normalized = query.trim().toLowerCase();
+    const normalized = query.trim();
 
     const { data: patients, error: patientError } = await admin
       .from("patients")
@@ -48,10 +48,8 @@ serve(async (req) => {
         "id, first_name, last_name, rut, birth_date, email, phone, address_line, comuna, region, health_insurance",
       )
       .eq("tenant_id", bookingLink.tenant_id)
-      .or(
-        `rut.ilike.%${normalized}%,email.ilike.%${normalized}%,first_name.ilike.%${normalized}%,last_name.ilike.%${normalized}%`,
-      )
-      .limit(8);
+      .eq("rut", normalized)
+      .limit(1);
 
     if (patientError) {
       return new Response(JSON.stringify({ error: patientError.message }), {
