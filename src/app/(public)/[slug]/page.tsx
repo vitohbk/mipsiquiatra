@@ -160,7 +160,6 @@ export default function PublicBookingPage() {
   useEffect(() => {
     const loadNextAvailability = async () => {
       if (!slug) return;
-      if (!initialSlotsLoaded) return;
       try {
         const today = normalizeUtcDate(new Date());
         const maxLookaheadDays = 93;
@@ -193,7 +192,7 @@ export default function PublicBookingPage() {
     };
 
     loadNextAvailability();
-  }, [slug, initialSlotsLoaded]);
+  }, [slug]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
