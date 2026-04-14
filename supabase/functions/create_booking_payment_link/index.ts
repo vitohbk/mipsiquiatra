@@ -5,6 +5,7 @@ import { createAdminClient } from "../_shared/supabase.ts";
 const mpAccessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") ?? "";
 const mpWebhookUrl = Deno.env.get("MERCADOPAGO_WEBHOOK_URL") ?? "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.mipsiquiatra.cl").replace(/\/$/, "");
 const mpSandbox = (Deno.env.get("MERCADOPAGO_SANDBOX") ?? "false").toLowerCase() === "true";
 const allowedRoles = ["owner", "admin", "staff"] as const;
 
@@ -200,12 +201,12 @@ serve(async (req) => {
       bookingPaymentUpdated = true;
     }
 
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const apikeySuffix = anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : "";
     const notificationUrl = mpWebhookUrl
       ? mpWebhookUrl
-      : supabaseUrl
-        ? `${supabaseUrl}/functions/v1/mercadopago_webhook${apikeySuffix}`
+      : publicSiteUrl
+        ? `${publicSiteUrl}/api/mercadopago/webhook`
+        : supabaseUrl
+          ? `${supabaseUrl}/functions/v1/mercadopago_webhook`
         : "";
 
     const preferencePayload = {

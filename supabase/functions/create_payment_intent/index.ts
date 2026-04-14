@@ -7,6 +7,7 @@ const LOCK_MINUTES = Number(Deno.env.get("BOOKING_LOCK_MINUTES") ?? "10");
 const mpAccessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") ?? "";
 const mpWebhookUrl = Deno.env.get("MERCADOPAGO_WEBHOOK_URL") ?? "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const publicSiteUrl = (Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.mipsiquiatra.cl").replace(/\/$/, "");
 const mpSandbox = (Deno.env.get("MERCADOPAGO_SANDBOX") ?? "false").toLowerCase() === "true";
 
 function toDate(value: string) {
@@ -134,7 +135,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         payment_id: existingPayment.data.id,
         status: existingPayment.data.status,
-        redirect_url: existingPayment.data.raw_response?.redirect_url ?? null,
+        redirect_url: existingPayment.data.raw_response?.redirect_url ??
+          existingPayment.data.raw_response?.init_point ??
+          existingPayment.data.raw_response?.sandbox_init_point ??
+          null,
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -340,12 +344,12 @@ serve(async (req) => {
       });
     }
 
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const apikeySuffix = anonKey ? `?apikey=${encodeURIComponent(anonKey)}` : "";
     const notificationUrl = mpWebhookUrl
       ? mpWebhookUrl
-      : supabaseUrl
-        ? `${supabaseUrl}/functions/v1/mercadopago_webhook${apikeySuffix}`
+      : publicSiteUrl
+        ? `${publicSiteUrl}/api/mercadopago/webhook`
+        : supabaseUrl
+          ? `${supabaseUrl}/functions/v1/mercadopago_webhook`
         : "";
 
     const preferencePayload = {
@@ -397,9 +401,22 @@ serve(async (req) => {
       provider_reference: preference.id ?? null,
       raw_response: {
         lock_token: lockToken,
+        patient: {
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          rut: patient.rut,
+          birth_date: patient.birth_date,
+          email: patient.email,
+          phone: patient.phone,
+          address_line: patient.address_line,
+          comuna: patient.comuna,
+          region: patient.region,
+          health_insurance: patient.health_insurance,
+        },
         preference_id: preference.id ?? null,
         init_point: preference.init_point ?? null,
         sandbox_init_point: preference.sandbox_init_point ?? null,
+        redirect_url: redirectUrl ?? null,
       },
     }).eq("id", paymentInsert.data.id);
 
