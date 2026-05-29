@@ -133,6 +133,21 @@ serve(async (req) => {
     const minAdvanceHours = service?.max_advance_hours ?? 72;
     const minAdvanceDate = new Date(Date.now() + minAdvanceHours * 60 * 60 * 1000);
 
+    const allServicesResult = await admin
+      .from("services")
+      .select("duration_minutes")
+      .eq("tenant_id", bookingLink.tenant_id)
+      .eq("professional_user_id", bookingLink.professional_user_id)
+      .eq("is_active", true);
+
+    if (allServicesResult.error) throw new Error(allServicesResult.error.message);
+    const durations = (allServicesResult.data ?? [])
+      .map((row) => row.duration_minutes)
+      .filter((value): value is number => typeof value === "number" && value > 0);
+    const slotStep = durations.length > 0
+      ? Math.min(...durations, service.duration_minutes)
+      : service.duration_minutes;
+
     const rulesResult = await admin
       .from("availability_rules")
       .select("weekday, start_time, end_time, timezone, is_active")
@@ -230,7 +245,7 @@ serve(async (req) => {
           if (slotStart >= minAdvanceDate) {
             slots.push({ start_at: slotStart.toISOString(), end_at: slotEnd.toISOString() });
           }
-          cursor = slotEnd;
+          cursor = addMinutes(cursor, slotStep);
         }
       }
 
@@ -247,7 +262,7 @@ serve(async (req) => {
           if (slotStart >= minAdvanceDate) {
             slots.push({ start_at: slotStart.toISOString(), end_at: slotEnd.toISOString() });
           }
-          cursor = slotEnd;
+          cursor = addMinutes(cursor, slotStep);
         }
       }
     }
