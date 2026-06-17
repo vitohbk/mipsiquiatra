@@ -1,23 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f2f3f0;
-  --foreground: #242826;
-  --page-bg: #f2f3f0;
-  --page-text: #242826;
-  --panel-bg: #fbfbf8;
-  --panel-border: #e1e6de;
-  --panel-muted: #6f756f;
-  --panel-soft: #eef1eb;
-  --brand-bg: #f2f3f0;
-  --brand-paper: #fbfbf8;
-  --brand-border: #e1e6de;
-  --brand-soft: #eef1eb;
-  --brand-ink: #242826;
-  --brand-body: #4b524c;
-  --brand-muted: #6f756f;
-  --brand-teal: #6f9f9a;
-  --brand-copper: #caa98b;
+  /* Teal scale — brand primary, all in OKLCH */
+  --teal-100: oklch(96% 0.018 191);
+  --teal-200: oklch(88% 0.04 191);
+  --teal-400: oklch(68% 0.09 191);
+  --teal-600: oklch(50% 0.09 191);
+  --teal-800: oklch(32% 0.07 191);
+  --teal-900: oklch(18% 0.04 191);
+
+  /* Copper accent */
+  --copper: oklch(60% 0.1 55);
+  --copper-dark: oklch(45% 0.12 55);
+
+  /* Semantic tokens — no cream, true neutral or teal-tinted */
+  --background: oklch(99% 0 0);
+  --foreground: oklch(16% 0.02 191);
+  --page-bg: oklch(99% 0 0);
+  --page-text: oklch(16% 0.02 191);
+  --panel-bg: oklch(100% 0 0);
+  --panel-border: oklch(90% 0.015 191);
+  --panel-muted: oklch(48% 0.02 191);
+  --panel-soft: var(--teal-100);
+  --brand-bg: oklch(99% 0 0);
+  --brand-paper: oklch(100% 0 0);
+  --brand-border: oklch(90% 0.015 191);
+  --brand-soft: var(--teal-100);
+  --brand-ink: oklch(16% 0.02 191);
+  --brand-body: oklch(38% 0.02 191);
+  --brand-muted: oklch(48% 0.02 191);
+  --brand-teal: var(--teal-600);
+  --brand-copper: var(--copper);
+
+  /* Type scale — fluid headings, fixed body */
+  --text-hero: clamp(2.5rem, 5.5vw, 4.5rem);
+  --text-display: clamp(1.875rem, 4vw, 3rem);
+  --text-heading: clamp(1.25rem, 2.5vw, 1.75rem);
+  --text-body: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
 }
 
 @theme inline {
@@ -31,6 +52,9 @@ body {
   background: var(--page-bg);
   color: var(--page-text);
   font-family: var(--font-source-sans), "Source Sans Pro", sans-serif;
+  text-wrap: pretty;
+  /* Bridge alias — pages still using --font-playfair get Vollkorn */
+  --font-playfair: var(--font-vollkorn);
 }
 
 h1,
@@ -39,19 +63,48 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-weight: 400;
+  font-family: var(--font-vollkorn), "Georgia", serif;
+  font-weight: 600;
+  text-wrap: balance;
 }
 
 h1 {
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h3 {
   line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+/* Heading scale utilities */
+.heading-hero {
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.heading-section {
+  font-size: var(--text-display);
 }
 
 .site-title {
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-weight: 400;
-  font-size: 1.8rem;
-  line-height: 1.23em;
+  font-family: var(--font-vollkorn), "Georgia", serif;
+  font-weight: 500;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 640px) {
+  .site-title { font-size: 1.75rem; }
 }
 
 .site-description {
@@ -59,19 +112,21 @@ h1 {
 }
 
 .step-number {
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-size: 6rem;
+  font-family: var(--font-vollkorn), "Georgia", serif;
+  font-size: clamp(3.5rem, 6vw, 5.5rem);
   line-height: 1;
   font-weight: 400;
-  color: #000000;
+  letter-spacing: -0.04em;
+  color: var(--brand-ink);
 }
 
 .price-number {
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-size: 4rem;
+  font-family: var(--font-vollkorn), "Georgia", serif;
+  font-size: clamp(2.25rem, 4vw, 3.75rem);
   line-height: 1;
-  font-weight: 400;
-  color: #000000;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--brand-ink);
 }
 
 .dashboard-brand {
@@ -109,4 +164,69 @@ select {
   border: 1px solid var(--brand-border);
   background: var(--brand-paper);
   color: var(--brand-copper);
+}
+
+/* === Motion tokens === */
+:root {
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* === Hero entrance — page-load, sequential stagger === */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hero-animate {
+  animation: hero-rise 0.7s var(--ease-out-expo) both;
+}
+.hero-animate[data-delay="1"] { animation-delay: 200ms; }
+.hero-animate[data-delay="2"] { animation-delay: 380ms; }
+.hero-animate[data-delay="3"] { animation-delay: 560ms; }
+
+/* === Scroll reveal — JS adds js-reveal-ready to <html> on mount === */
+.js-reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity  0.65s var(--ease-out-expo),
+    transform 0.65s var(--ease-out-expo);
+}
+
+/* Doctor photo: scale-settle instead of rise */
+.js-reveal-ready [data-reveal="scale"] {
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity  0.85s var(--ease-out-expo),
+    transform 0.85s var(--ease-out-expo);
+}
+
+/* Stagger delays */
+.js-reveal-ready [data-delay="1"] { transition-delay:  80ms; }
+.js-reveal-ready [data-delay="2"] { transition-delay: 160ms; }
+.js-reveal-ready [data-delay="3"] { transition-delay: 240ms; }
+.js-reveal-ready [data-delay="4"] { transition-delay: 320ms; }
+.js-reveal-ready [data-delay="5"] { transition-delay: 400ms; }
+.js-reveal-ready [data-delay="6"] { transition-delay: 480ms; }
+
+.js-reveal-ready [data-reveal].reveal-visible {
+  opacity: 1;
+  transform: none;
+}
+.js-reveal-ready [data-reveal="scale"].reveal-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Reduced motion — no animation, always visible */
+@media (prefers-reduced-motion: reduce) {
+  .hero-animate { animation: none; }
+  .js-reveal-ready [data-reveal],
+  .js-reveal-ready [data-reveal="scale"] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }

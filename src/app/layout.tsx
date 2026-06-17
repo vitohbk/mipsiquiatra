@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Vollkorn } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -13,9 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const playfair = localFont({
-  src: [{ path: "../../public/fonts/PlayfairDisplay-400.ttf", weight: "400", style: "normal" }],
-  variable: "--font-playfair",
+const vollkorn = Vollkorn({
+  variable: "--font-vollkorn",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -32,6 +33,12 @@ const sourceSans = localFont({
 export const metadata: Metadata = {
   title: "Inicio - Mi Psiquiatra",
   description: "Caminos Difíciles, llevan a Lugares Hermosos",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -59,7 +66,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${sourceSans.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${vollkorn.variable} ${sourceSans.variable} antialiased`}
       >
         <noscript>
           <iframe

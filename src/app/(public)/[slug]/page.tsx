@@ -117,12 +117,9 @@ export default function PublicBookingPage() {
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
   const [patientLoading, setPatientLoading] = useState(false);
   const [patientLookupError, setPatientLookupError] = useState<string | null>(null);
-  const [regionOpen, setRegionOpen] = useState(false);
-  const [comunaOpen, setComunaOpen] = useState(false);
   const [insuranceOpen, setInsuranceOpen] = useState(false);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const regionRef = useRef<HTMLDivElement | null>(null);
-  const comunaRef = useRef<HTMLDivElement | null>(null);
   const insuranceRef = useRef<HTMLDivElement | null>(null);
   const [bookingStep, setBookingStep] = useState(1);
   const progressPercent = Math.min(100, (bookingStep / 3) * 100);
@@ -198,13 +195,6 @@ export default function PublicBookingPage() {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-
-      if (regionOpen && regionRef.current && !regionRef.current.contains(target)) {
-        setRegionOpen(false);
-      }
-      if (comunaOpen && comunaRef.current && !comunaRef.current.contains(target)) {
-        setComunaOpen(false);
-      }
       if (insuranceOpen && insuranceRef.current && !insuranceRef.current.contains(target)) {
         setInsuranceOpen(false);
       }
@@ -214,13 +204,20 @@ export default function PublicBookingPage() {
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
-  }, [regionOpen, comunaOpen, insuranceOpen]);
+  }, [insuranceOpen]);
 
   useEffect(() => {
     if (!selectedSlot) {
       setBookingStep(1);
     }
   }, [selectedSlot]);
+
+  useEffect(() => {
+    const name = service?.professional_name;
+    document.title = name
+      ? `Reserva con ${name} — Mi Psiquiatra`
+      : "Agenda tu cita — Mi Psiquiatra";
+  }, [service]);
 
   useEffect(() => {
     const loadRegions = async () => {
@@ -257,6 +254,7 @@ export default function PublicBookingPage() {
 
   useEffect(() => {
     const loadSlots = async () => {
+      setSlotsLoading(true);
       try {
         setError(null);
         const availability = await callEdgeFunction<{ slots: Slot[] }>(
@@ -283,6 +281,8 @@ export default function PublicBookingPage() {
         setInitialSlotsLoaded(true);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
+      } finally {
+        setSlotsLoading(false);
       }
     };
 
@@ -371,7 +371,7 @@ export default function PublicBookingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--brand-bg)] px-6 py-12 font-[var(--font-source-sans)] text-[var(--brand-body)]">
+    <main className="min-h-screen bg-[var(--brand-bg)] px-6 py-8 font-[var(--font-source-sans)] text-[var(--brand-body)] md:py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <Link
           className="text-base uppercase tracking-[0.35em] text-[var(--brand-copper)] hover:text-[var(--brand-teal)]"
@@ -380,25 +380,25 @@ export default function PublicBookingPage() {
           ← Volver
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-sm ring-1 ring-black/5">
-            {(() => {
-              const logoUrl = (tenant?.branding as { logo_url?: string } | null)?.logo_url;
-              return logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
+          {(() => {
+            const logoUrl = (tenant?.branding as { logo_url?: string } | null)?.logo_url;
+            return logoUrl ? (
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-sm ring-1 ring-black/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
-              ) : null;
-            })()}
-          </div>
+              </div>
+            ) : null;
+          })()}
           <div className="space-y-0.5">
-            <p className="text-sm uppercase tracking-[0.25em] text-[var(--brand-muted)] opacity-70">
-              {tenant?.name ?? "Reserva"}
-            </p>
             <h1 className="text-xl font-[var(--font-playfair)] leading-tight text-[var(--brand-ink)] md:text-2xl">
-              {service?.name ?? `Reserva para ${slug}`}
+              {service?.name ?? `Reserva con ${tenant?.name ?? "Mi Psiquiatra"}`}
             </h1>
+            {tenant?.name ? (
+              <p className="text-sm text-[var(--brand-muted)] opacity-70">{tenant.name}</p>
+            ) : null}
           </div>
         </div>
-        {error ? <p className="text-base text-red-500">{error}</p> : null}
+        {error ? <p role="alert" aria-live="assertive" className="text-base text-red-500">{error}</p> : null}
         <div
           className={`grid items-start gap-6 rounded-3xl border border-[var(--brand-border)] bg-white p-6 shadow-sm ${
             bookingStep === 1 ? "lg:grid-cols-[0.95fr_2.05fr]" : "lg:grid-cols-[1.1fr_1.9fr]"
@@ -411,17 +411,17 @@ export default function PublicBookingPage() {
           >
             <div className="space-y-3">
               <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-sm ring-1 ring-black/5">
-                  {service?.professional_avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={service.professional_avatar_url}
-                      alt={service?.professional_name ?? "Profesional"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
-                </div>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-[var(--brand-border)] bg-white shadow-md ring-1 ring-black/5">
+                    {service?.professional_avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={service.professional_avatar_url}
+                        alt={service?.professional_name ?? "Profesional"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
                   <div>
                     <p className="text-base font-semibold text-[var(--brand-ink)]">
                       {service?.professional_name ?? "Profesional"}
@@ -634,9 +634,11 @@ export default function PublicBookingPage() {
                   </div>
                 </div>
                 <div className="rounded-3xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
-                  {slots.length === 0 ? (
+                  {slotsLoading ? (
+                    <p className="text-base text-[var(--brand-muted)]">Cargando horas disponibles…</p>
+                  ) : slots.length === 0 ? (
                     <p className="text-base text-[var(--brand-muted)]">
-                      No hay horas hoy. Busca un día diferente.
+                      No hay horas disponibles este día. Elige otra fecha.
                     </p>
                   ) : (
                     <>
@@ -697,7 +699,7 @@ export default function PublicBookingPage() {
                 </div>
               </div>
               {patientLookupError ? (
-                <p className="mt-4 text-sm text-amber-500">{patientLookupError}</p>
+                <p role="alert" aria-live="polite" className="mt-4 text-sm text-amber-500">{patientLookupError}</p>
               ) : null}
               <form
                 className="mt-4 grid gap-4"
@@ -715,7 +717,7 @@ export default function PublicBookingPage() {
 
                   const normalizedRut = noRut ? "" : formatRut(rut);
                   if (!noRut && !isValidRut(normalizedRut)) {
-                    setError("RUT invalido.");
+                    setError("RUT inválido.");
                     setIsSubmitting(false);
                     return;
                   }
@@ -753,7 +755,7 @@ export default function PublicBookingPage() {
                     }, { disableAuth: true });
 
                     if (result.booking_id) {
-                      setBookingStatus(`Reserva confirmada. ID ${result.booking_id}.`);
+                      setBookingStatus("Tu cita quedó confirmada. Revisa tu email para los detalles.");
                       return;
                     }
 
@@ -762,9 +764,7 @@ export default function PublicBookingPage() {
                       return;
                     }
 
-                    setBookingStatus(
-                      `Lock creado. Payment ${result.payment_id}. Checkout no disponible.`,
-                    );
+                    setBookingStatus("Tu hora está reservada. Un momento mientras procesamos tu confirmación.");
                   } catch (intentError) {
                     setError(intentError instanceof Error ? intentError.message : "Error creando pago");
                   } finally {
@@ -774,6 +774,9 @@ export default function PublicBookingPage() {
               >
                 {bookingStep === 2 ? (
                   <>
+                    <p className="text-sm text-[var(--brand-muted)]">
+                      Completa tus datos para confirmar la hora. Tu información es confidencial y se usa únicamente para tu atención médica.
+                    </p>
                       <div className="grid gap-4 md:grid-cols-2">
                         <label className="text-base text-[var(--brand-ink)]">
                           <div className="flex items-center gap-2">
@@ -794,24 +797,33 @@ export default function PublicBookingPage() {
                               Sin RUT)
                             </span>
                           </div>
-                          <input
-                            className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
-                            value={rut}
-                            onChange={(event) => setRut(event.target.value)}
-                            onBlur={() => {
-                              const normalized = formatRut(rut);
-                              setRut(normalized);
-                              lookupPatientByRut(normalized);
-                            }}
-                            required
-                            disabled={noRut || patientLoading}
-                          />
+                          <div className="relative">
+                            <input
+                              className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)] disabled:opacity-60"
+                              value={rut}
+                              autoComplete="off"
+                              onChange={(event) => setRut(event.target.value)}
+                              onBlur={() => {
+                                const normalized = formatRut(rut);
+                                setRut(normalized);
+                                lookupPatientByRut(normalized);
+                              }}
+                              required
+                              disabled={noRut || patientLoading}
+                            />
+                            {patientLoading && (
+                              <span className="absolute right-3 top-1/2 mt-1 -translate-y-1/2 text-xs text-[var(--brand-muted)]">
+                                Buscando…
+                              </span>
+                            )}
+                          </div>
                         </label>
                         <label className="text-base text-[var(--brand-ink)]">
                           Fecha nacimiento
                           <input
                             className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                             type="date"
+                            autoComplete="bday"
                             value={birthDate}
                             onChange={(event) => setBirthDate(event.target.value)}
                             required
@@ -821,6 +833,7 @@ export default function PublicBookingPage() {
                           Nombre
                           <input
                             className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
+                            autoComplete="given-name"
                             value={firstName}
                             onChange={(event) => setFirstName(event.target.value)}
                             onBlur={() => setFirstName(capitalizeFirst(firstName))}
@@ -831,6 +844,7 @@ export default function PublicBookingPage() {
                           Apellidos
                           <input
                             className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
+                            autoComplete="family-name"
                             value={lastName}
                             onChange={(event) => setLastName(event.target.value)}
                             onBlur={() => setLastName(capitalizeFirst(lastName))}
@@ -856,7 +870,7 @@ export default function PublicBookingPage() {
                             return;
                           }
                           if (!noRut && !isValidRut(rut)) {
-                            setError("RUT invalido.");
+                            setError("RUT inválido.");
                             return;
                           }
                           setError(null);
@@ -877,15 +891,18 @@ export default function PublicBookingPage() {
                               <input
                                 className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
                                 type="email"
+                                autoComplete="email"
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 required
                               />
                             </label>
                             <label className="text-base text-[var(--brand-ink)]">
-                              Telefono
+                              Teléfono
                               <input
                                 className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
+                                type="tel"
+                                autoComplete="tel"
                                 value={phone}
                                 onChange={(event) => setPhone(event.target.value)}
                                 required
@@ -894,108 +911,53 @@ export default function PublicBookingPage() {
                           </div>
                         </div>
                         <div className="space-y-2">
+                          <p className="text-xs text-[var(--brand-muted)] opacity-70">
+                            Domicilio y ubicación son requeridos para tu ficha médica y para emitir licencias médicas si corresponde.
+                          </p>
                           <div className="grid gap-4 md:grid-cols-2">
                             <label className="text-base text-[var(--brand-ink)]">
                               Domicilio
                               <input
                                 className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
+                                autoComplete="street-address"
                                 value={addressLine}
                                 onChange={(event) => setAddressLine(event.target.value)}
                                 required
                               />
                             </label>
                             <label className="text-base text-[var(--brand-ink)]">
-                              Region
-                              <div className="relative" ref={regionRef}>
-                                <button
-                                  type="button"
-                                  className="mt-2 flex w-full items-center justify-between rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-left text-base text-[var(--brand-ink)]"
-                                  onClick={() => {
-                                    setRegionOpen((prev) => !prev);
-                                    setComunaOpen(false);
-                                  }}
-                                >
-                                  <span>{region || "Selecciona"}</span>
-                                  <svg
-                                    aria-hidden="true"
-                                    className="h-4 w-4 text-[var(--brand-muted)]"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M7.41 9.59a1 1 0 0 1 1.41 0L12 12.76l3.18-3.17a1 1 0 1 1 1.41 1.41l-3.88 3.88a1 1 0 0 1-1.41 0L7.41 11a1 1 0 0 1 0-1.41z"
-                                      fill="currentColor"
-                                    />
-                                  </svg>
-                                </button>
-                                {regionOpen && (
-                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-2xl border border-[var(--brand-border)] bg-white shadow-lg">
-                                    {regions.map((item) => (
-                                      <button
-                                        key={item.code}
-                                        type="button"
-                                        className="w-full px-3 py-2 text-left text-base text-[var(--brand-ink)] hover:bg-[var(--brand-soft)]"
-                                        onClick={() => {
-                                          setRegion(item.name);
-                                          setComuna("");
-                                          setRegionOpen(false);
-                                        }}
-                                      >
-                                        {item.name}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              Región
+                              <select
+                                className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)]"
+                                value={region}
+                                onChange={(e) => {
+                                  setRegion(e.target.value);
+                                  setComuna("");
+                                }}
+                                required
+                              >
+                                <option value="">Selecciona</option>
+                                {regions.map((item) => (
+                                  <option key={item.code} value={item.name}>{item.name}</option>
+                                ))}
+                              </select>
                             </label>
                           </div>
                           <div className="grid gap-4 md:grid-cols-2">
                             <label className="text-base text-[var(--brand-ink)]">
                               Comuna
-                              <div className="relative" ref={comunaRef}>
-                                <button
-                                  type="button"
-                                  className="mt-2 flex w-full items-center justify-between rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-left text-base text-[var(--brand-ink)] disabled:opacity-50"
-                                  onClick={() => {
-                                    if (!region || comunas.length === 0) return;
-                                    setComunaOpen((prev) => !prev);
-                                    setRegionOpen(false);
-                                  }}
-                                  disabled={!region || comunas.length === 0}
-                                >
-                                  <span>{comuna || "Selecciona"}</span>
-                                  <svg
-                                    aria-hidden="true"
-                                    className="h-4 w-4 text-[var(--brand-muted)]"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M7.41 9.59a1 1 0 0 1 1.41 0L12 12.76l3.18-3.17a1 1 0 1 1 1.41 1.41l-3.88 3.88a1 1 0 0 1-1.41 0L7.41 11a1 1 0 0 1 0-1.41z"
-                                      fill="currentColor"
-                                    />
-                                  </svg>
-                                </button>
-                                {comunaOpen && (
-                                  <div className="absolute inset-x-0 z-20 mt-1 max-h-56 overflow-auto rounded-2xl border border-[var(--brand-border)] bg-white shadow-lg">
-                                    {comunas.map((item) => (
-                                      <button
-                                        key={item.code}
-                                        type="button"
-                                        className="w-full px-3 py-2 text-left text-base text-[var(--brand-ink)] hover:bg-[var(--brand-soft)]"
-                                        onClick={() => {
-                                          setComuna(item.name);
-                                          setComunaOpen(false);
-                                        }}
-                                      >
-                                        {item.name}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              <select
+                                className="mt-2 w-full rounded-2xl border border-[var(--brand-border)] bg-white px-3 py-2 text-base text-[var(--brand-ink)] disabled:opacity-50"
+                                value={comuna}
+                                onChange={(e) => setComuna(e.target.value)}
+                                disabled={!region || comunas.length === 0}
+                                required
+                              >
+                                <option value="">Selecciona</option>
+                                {comunas.map((item) => (
+                                  <option key={item.code} value={item.name}>{item.name}</option>
+                                ))}
+                              </select>
                             </label>
                             <label className="text-base text-[var(--brand-ink)]">
                               Previsión
@@ -1049,8 +1011,12 @@ export default function PublicBookingPage() {
                           </div>
                         </div>
                       </div>
-                      {bookingStatus ? <p className="text-base text-emerald-600">{bookingStatus}</p> : null}
-                      {geoError ? <p className="text-sm text-amber-500">{geoError}</p> : null}
+                      {bookingStatus ? <p role="status" aria-live="polite" className="text-base text-emerald-600">{bookingStatus}</p> : null}
+                      {geoError ? <p role="alert" aria-live="polite" className="text-sm text-amber-500">{geoError}</p> : null}
+                      <p className="text-sm text-[var(--brand-muted)]">
+                        Recibirás un email con los detalles y las instrucciones para unirte a la videollamada.
+                        {service?.requires_payment ? " Ante cualquier cambio, contáctanos directamente." : ""}
+                      </p>
                       <div className="flex flex-wrap justify-end gap-2">
                         <button
                           className="rounded-full border border-[var(--brand-border)] px-6 py-3 text-sm uppercase tracking-[0.2em] text-[var(--brand-copper)]"

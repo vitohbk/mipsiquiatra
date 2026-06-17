@@ -133,14 +133,83 @@ serve(async (req) => {
     const minAdvanceHours = service?.max_advance_hours ?? 72;
     const minAdvanceDate = new Date(Date.now() + minAdvanceHours * 60 * 60 * 1000);
 
-    const allServicesResult = await admin
-      .from("services")
-      .select("duration_minutes")
-      .eq("tenant_id", bookingLink.tenant_id)
-      .eq("professional_user_id", bookingLink.professional_user_id)
-      .eq("is_active", true);
+    // Run all independent queries in parallel after the initial lookup.
+    const rangeEndIso = new Date(`${endDate}T23:59:59Z`).toISOString();
+    const startIso = start.toISOString();
+    const nowIso = new Date().toISOString();
+
+    const [
+      allServicesResult,
+      rulesSpecificResult,
+      rulesFallbackResult,
+      exceptionsSpecificResult,
+      exceptionsFallbackResult,
+      bookingsResult,
+      locksResult,
+    ] = await Promise.all([
+      admin
+        .from("services")
+        .select("duration_minutes")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .eq("is_active", true),
+      admin
+        .from("availability_rules")
+        .select("weekday, start_time, end_time, timezone, is_active")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .eq("service_id", bookingLink.service_id)
+        .eq("is_active", true),
+      admin
+        .from("availability_rules")
+        .select("weekday, start_time, end_time, timezone, is_active")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .is("service_id", null)
+        .eq("is_active", true),
+      admin
+        .from("availability_exceptions")
+        .select("date, start_time, end_time, is_available")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .eq("service_id", bookingLink.service_id)
+        .gte("date", startDate)
+        .lte("date", endDate),
+      admin
+        .from("availability_exceptions")
+        .select("date, start_time, end_time, is_available")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .is("service_id", null)
+        .gte("date", startDate)
+        .lte("date", endDate),
+      admin
+        .from("bookings")
+        .select("start_at, end_at")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .eq("status", "confirmed")
+        .lt("start_at", rangeEndIso)
+        .gt("end_at", startIso),
+      admin
+        .from("booking_locks")
+        .select("start_at, end_at, expires_at")
+        .eq("tenant_id", bookingLink.tenant_id)
+        .eq("professional_user_id", bookingLink.professional_user_id)
+        .eq("status", "active")
+        .gt("expires_at", nowIso)
+        .lt("start_at", rangeEndIso)
+        .gt("end_at", startIso),
+    ]);
 
     if (allServicesResult.error) throw new Error(allServicesResult.error.message);
+    if (rulesSpecificResult.error) throw new Error(rulesSpecificResult.error.message);
+    if (rulesFallbackResult.error) throw new Error(rulesFallbackResult.error.message);
+    if (exceptionsSpecificResult.error) throw new Error(exceptionsSpecificResult.error.message);
+    if (exceptionsFallbackResult.error) throw new Error(exceptionsFallbackResult.error.message);
+    if (bookingsResult.error) throw new Error(bookingsResult.error.message);
+    if (locksResult.error) throw new Error(locksResult.error.message);
+
     const durations = (allServicesResult.data ?? [])
       .map((row) => row.duration_minutes)
       .filter((value): value is number => typeof value === "number" && value > 0);
@@ -148,74 +217,13 @@ serve(async (req) => {
       ? Math.min(...durations, service.duration_minutes)
       : service.duration_minutes;
 
-    const rulesResult = await admin
-      .from("availability_rules")
-      .select("weekday, start_time, end_time, timezone, is_active")
-      .eq("tenant_id", bookingLink.tenant_id)
-      .eq("professional_user_id", bookingLink.professional_user_id)
-      .eq("service_id", bookingLink.service_id)
-      .eq("is_active", true);
-
-    if (rulesResult.error) throw new Error(rulesResult.error.message);
-    let rules = rulesResult.data ?? [];
-    if (rules.length === 0) {
-      const fallbackRules = await admin
-        .from("availability_rules")
-        .select("weekday, start_time, end_time, timezone, is_active")
-        .eq("tenant_id", bookingLink.tenant_id)
-        .eq("professional_user_id", bookingLink.professional_user_id)
-        .is("service_id", null)
-        .eq("is_active", true);
-      if (fallbackRules.error) throw new Error(fallbackRules.error.message);
-      rules = fallbackRules.data ?? [];
-    }
-
-    const exceptionsResult = await admin
-      .from("availability_exceptions")
-      .select("date, start_time, end_time, is_available")
-      .eq("tenant_id", bookingLink.tenant_id)
-      .eq("professional_user_id", bookingLink.professional_user_id)
-      .eq("service_id", bookingLink.service_id)
-      .gte("date", startDate)
-      .lte("date", endDate);
-
-    if (exceptionsResult.error) throw new Error(exceptionsResult.error.message);
-    let exceptions = exceptionsResult.data ?? [];
-    if (exceptions.length === 0) {
-      const fallbackExceptions = await admin
-        .from("availability_exceptions")
-        .select("date, start_time, end_time, is_available")
-        .eq("tenant_id", bookingLink.tenant_id)
-        .eq("professional_user_id", bookingLink.professional_user_id)
-        .is("service_id", null)
-        .gte("date", startDate)
-        .lte("date", endDate);
-      if (fallbackExceptions.error) throw new Error(fallbackExceptions.error.message);
-      exceptions = fallbackExceptions.data ?? [];
-    }
-
-    const [bookingsResult, locksResult] = await Promise.all([
-      admin
-        .from("bookings")
-        .select("start_at, end_at")
-        .eq("tenant_id", bookingLink.tenant_id)
-        .eq("professional_user_id", bookingLink.professional_user_id)
-        .eq("status", "confirmed")
-        .lt("start_at", new Date(`${endDate}T23:59:59Z`).toISOString())
-        .gt("end_at", start.toISOString()),
-      admin
-        .from("booking_locks")
-        .select("start_at, end_at, expires_at")
-        .eq("tenant_id", bookingLink.tenant_id)
-        .eq("professional_user_id", bookingLink.professional_user_id)
-        .eq("status", "active")
-        .gt("expires_at", new Date().toISOString())
-        .lt("start_at", new Date(`${endDate}T23:59:59Z`).toISOString())
-        .gt("end_at", start.toISOString()),
-    ]);
-
-    if (bookingsResult.error) throw new Error(bookingsResult.error.message);
-    if (locksResult.error) throw new Error(locksResult.error.message);
+    // Use service-specific rules/exceptions when present; fall back to the generic ones.
+    const rules = (rulesSpecificResult.data ?? []).length > 0
+      ? rulesSpecificResult.data!
+      : (rulesFallbackResult.data ?? []);
+    const exceptions = (exceptionsSpecificResult.data ?? []).length > 0
+      ? exceptionsSpecificResult.data!
+      : (exceptionsFallbackResult.data ?? []);
 
     const bookings = bookingsResult.data ?? [];
     const locks = locksResult.data ?? [];
