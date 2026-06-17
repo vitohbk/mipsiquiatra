@@ -127,7 +127,6 @@ export default function PublicBookingPage() {
   const [monthCursor, setMonthCursor] = useState<Date>(new Date());
   const [monthAvailability, setMonthAvailability] = useState<Record<string, number>>({});
   const [autoSelectFirstSlot, setAutoSelectFirstSlot] = useState(false);
-  const [initialSlotsLoaded, setInitialSlotsLoaded] = useState(false);
   const patientLookupRequestRef = useRef(0);
 
   useEffect(() => {
@@ -151,34 +150,30 @@ export default function PublicBookingPage() {
   }, [slug]);
 
   useEffect(() => {
-    setInitialSlotsLoaded(false);
-  }, [slug]);
-
-  useEffect(() => {
     const loadNextAvailability = async () => {
       if (!slug) return;
       try {
         const today = normalizeUtcDate(new Date());
-        const maxLookaheadDays = 93;
+        // 62-day chunks match the edge function's MAX_RANGE_DAYS limit.
+        // At most 2 sequential calls cover the full 93-day lookahead.
+        const maxDate = addDays(today, 92);
         let cursor = today;
         let nextSlot: Slot | null = null;
 
-        while (!nextSlot) {
-          const rangeEnd = addDays(cursor, 30);
+        while (!nextSlot && cursor <= maxDate) {
+          const rangeEnd = addDays(cursor, 61);
+          const clampedEnd = rangeEnd <= maxDate ? rangeEnd : maxDate;
           const availability = await callEdgeFunction<{ slots: Slot[] }>(
             "public_availability",
             {
               slug,
               start_date: formatDate(cursor),
-              end_date: formatDate(rangeEnd),
+              end_date: formatDate(clampedEnd),
             },
             { disableAuth: true },
           );
           nextSlot = getFirstSlot(availability.slots);
-          if (nextSlot || formatDate(rangeEnd) === formatDate(addDays(today, maxLookaheadDays))) {
-            break;
-          }
-          cursor = addDays(rangeEnd, 1);
+          cursor = addDays(clampedEnd, 1);
         }
 
         setNextAvailableSlot(nextSlot);
@@ -278,7 +273,6 @@ export default function PublicBookingPage() {
         } else {
           setSelectedSlot(null);
         }
-        setInitialSlotsLoaded(true);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Error cargando");
       } finally {
@@ -300,7 +294,6 @@ export default function PublicBookingPage() {
   useEffect(() => {
     const loadMonth = async () => {
       if (!slug) return;
-      if (!initialSlotsLoaded) return;
       try {
         const rangeStart = startOfMonth(monthCursor);
         const rangeEnd = endOfMonth(monthCursor);
@@ -325,7 +318,7 @@ export default function PublicBookingPage() {
     };
 
     loadMonth();
-  }, [slug, monthCursor, initialSlotsLoaded]);
+  }, [slug, monthCursor]);
 
   const lookupPatientByRut = async (value: string) => {
     if (!value || noRut) return;
