@@ -1,6 +1,18 @@
+"use client";
+import { useEffect } from "react";
+
 const heroImage = "/assets/hero.webp";
 
 export default function BookingThanksPage() {
+  useEffect(() => {
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+      window.gtag("event", "conversion", {
+        send_to: "AW-746407741/xCUbCM_Uv-IbEL2O9eMC",
+        currency: "CLP",
+        value: 85000,
+      });
+    }
+  }, []);
   return (
     <main
       className="flex min-h-screen items-center justify-center px-6 py-16 font-[var(--font-source-sans)]"
