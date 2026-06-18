@@ -7,7 +7,7 @@ export default function BookingThanksPage() {
   useEffect(() => {
     if (typeof window !== "undefined" && typeof window.gtag === "function") {
       window.gtag("event", "conversion", {
-        send_to: "AW-746407741/xCUbCM_Uv-IbEL2O9eMC",
+        send_to: "AW-746407741/2iZACOnP-MAcEL2O9eMC",
         currency: "CLP",
         value: 85000,
       });
