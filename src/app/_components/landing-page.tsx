@@ -100,10 +100,11 @@ const testimonials = [
 
 type LandingPageProps = {
   heroTitle: string;
+  heroSubtitle?: string;
   hideHeader?: boolean;
 };
 
-export default function LandingPage({ heroTitle, hideHeader = false }: LandingPageProps) {
+export default function LandingPage({ heroTitle, heroSubtitle, hideHeader = false }: LandingPageProps) {
   return (
     <main className="font-[var(--font-source-sans)] text-[var(--brand-body)]">
       {!hideHeader && (
@@ -158,8 +159,12 @@ export default function LandingPage({ heroTitle, hideHeader = false }: LandingPa
       >
         <div className="mx-auto max-w-6xl px-6 py-20 text-white">
           <h1 className="mt-6 heading-hero hero-animate" data-delay="1">{heroTitle}</h1>
-          <p className="mx-auto mt-4 max-w-3xl text-lg uppercase tracking-[0.1em] text-white/90 md:tracking-[0.2em] hero-animate" data-delay="2">
-            ATENCIÓN PSIQUIÁTRICA PARA PERSONAS ADULTAS, VÍA TELEMEDICINA.
+          <p className="mx-auto mt-4 max-w-3xl text-lg text-white/90 hero-animate" data-delay="2">
+            {heroSubtitle || (
+              <span className="uppercase tracking-[0.1em] md:tracking-[0.2em]">
+                ATENCIÓN PSIQUIÁTRICA PARA PERSONAS ADULTAS, VÍA TELEMEDICINA.
+              </span>
+            )}
           </p>
           <div className="mt-10 hero-animate" data-delay="3">
             <a
