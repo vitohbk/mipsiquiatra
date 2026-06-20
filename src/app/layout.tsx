@@ -49,13 +49,14 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-746407741" />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SZZMRDGS5E" />
         <script
           dangerouslySetInnerHTML={{
             __html:
               "window.dataLayer = window.dataLayer || [];" +
               "function gtag(){dataLayer.push(arguments);}" +
               "gtag('js', new Date());" +
+              "gtag('config', 'G-SZZMRDGS5E');" +
               "gtag('config', 'AW-746407741');" +
               "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':" +
               "new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0]," +
