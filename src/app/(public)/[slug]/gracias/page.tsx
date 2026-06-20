@@ -23,6 +23,11 @@ function BookingThanksContent() {
         currency: "CLP",
         value: 85000,
       });
+      window.gtag("event", "purchase", {
+        currency: "CLP",
+        value: 85000,
+        landing_url: sessionStorage.getItem("landing_url") ?? undefined,
+      });
     }
   }, [isApproved]);
 

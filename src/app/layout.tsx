@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Vollkorn } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { LandingTracker } from "./_components/landing-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -77,6 +78,7 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        <LandingTracker />
         {children}
       </body>
     </html>

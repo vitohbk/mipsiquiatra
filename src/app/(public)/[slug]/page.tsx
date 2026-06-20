@@ -665,6 +665,12 @@ export default function PublicBookingPage() {
                                 onClick={() => {
                                   setError(null);
                                   setBookingStep(2);
+                                  if (typeof window !== "undefined" && typeof window.gtag === "function") {
+                                    window.gtag("event", "select_slot", {
+                                      page: slug,
+                                      landing_url: sessionStorage.getItem("landing_url") ?? undefined,
+                                    });
+                                  }
                                 }}
                               >
                                 Siguiente
@@ -753,6 +759,12 @@ export default function PublicBookingPage() {
                     }
 
                     if (result.redirect_url) {
+                      if (typeof window !== "undefined" && typeof window.gtag === "function") {
+                        window.gtag("event", "begin_checkout", {
+                          page: slug,
+                          landing_url: sessionStorage.getItem("landing_url") ?? undefined,
+                        });
+                      }
                       window.location.href = result.redirect_url;
                       return;
                     }
