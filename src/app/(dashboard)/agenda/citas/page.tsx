@@ -40,6 +40,7 @@ type Service = {
   payment_mode?: string | null;
   deposit_amount_clp?: number | null;
   currency?: string | null;
+  requires_payment?: boolean | null;
 };
 
 type Patient = {
@@ -140,7 +141,7 @@ export default function BookingsPage() {
           .order("start_at", { ascending: true }),
         supabase
           .from("services")
-          .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency")
+          .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency, requires_payment")
           .eq("tenant_id", activeTenantId),
         supabase
           .from("patients")
@@ -1177,13 +1178,13 @@ export default function BookingsPage() {
                         {
                           booking_id: insertedBooking.id,
                           customer_email: patient.email,
-                          type: "confirmation",
+                          type: service.requires_payment ? "reserved" : "confirmation",
                           source: "admin",
                         },
                         { disableAuth: true },
                       );
                     } catch {
-                      // Best-effort confirmation email for manual bookings.
+                      // Best-effort notification email for manual bookings.
                     }
                   }
 

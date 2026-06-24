@@ -33,6 +33,7 @@ export async function POST(req: Request) {
   const adminEmail = "yasna@mipsiquiatra.cl";
   const adminSubjectMap: Record<NotifyPayload["type"], string> = {
     confirmation: "nueva cita",
+    reserved: "cita reservada (pago pendiente)",
     cancelled: "cita cancelada",
     rescheduled: "cita reprogramada",
   };

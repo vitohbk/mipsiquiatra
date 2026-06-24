@@ -44,7 +44,7 @@ serve(async (req) => {
     const payload = await req.json();
     const bookingId = payload.booking_id?.toString();
     const customerEmail = payload.customer_email?.toString();
-    const type = (payload.type ?? "confirmation") as "confirmation" | "cancelled" | "rescheduled";
+    const type = (payload.type ?? "confirmation") as "confirmation" | "reserved" | "cancelled" | "rescheduled";
     const source = (payload.source ?? "public") as "public" | "admin";
 
     if (!bookingId) {
@@ -91,7 +91,7 @@ serve(async (req) => {
     }
 
     const timezone = booking.tenants?.timezone ?? "America/Santiago";
-    const shouldIncludeActions = type === "confirmation";
+    const shouldIncludeActions = type === "confirmation" || type === "reserved";
     const cancelToken = shouldIncludeActions
       ? await createActionToken(admin, booking.id, "cancel")
       : null;

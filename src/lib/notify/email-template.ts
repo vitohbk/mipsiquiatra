@@ -1,5 +1,5 @@
 export type NotifyPayload = {
-  type: "confirmation" | "cancelled" | "rescheduled";
+  type: "confirmation" | "cancelled" | "rescheduled" | "reserved";
   source?: "public" | "admin";
   to: string;
   customer_name?: string | null;
@@ -29,11 +29,13 @@ export function buildBookingEmail(payload: NotifyPayload) {
 
   const subjectMap: Record<NotifyPayload["type"], string> = {
     confirmation: isAdminBooking ? "Cita agendada por nuestro equipo" : "Cita confirmada",
+    reserved: "Cita reservada — pago pendiente",
     cancelled: "Cita cancelada",
     rescheduled: "Cita reprogramada",
   };
   const titleMap: Record<NotifyPayload["type"], string> = {
     confirmation: isAdminBooking ? "Cita agendada" : "Cita confirmada",
+    reserved: "Cita reservada",
     cancelled: "Cita cancelada",
     rescheduled: "Cita reprogramada",
   };
@@ -41,6 +43,7 @@ export function buildBookingEmail(payload: NotifyPayload) {
     confirmation: isAdminBooking
       ? `Tu cita para ${serviceName} fue agendada por nuestro equipo.`
       : `Tu cita para ${serviceName} quedó confirmada.`,
+    reserved: `Tu hora para ${serviceName} está reservada. Para confirmarla, debes realizar el pago antes de las 14:00 hrs del día hábil anterior a la cita. Si no se recibe el pago, la hora será liberada.`,
     cancelled: `Tu cita para ${serviceName} fue cancelada.`,
     rescheduled: `Tu cita para ${serviceName} fue reprogramada.`,
   };
@@ -93,7 +96,9 @@ export function buildBookingEmail(payload: NotifyPayload) {
             ${payload.type !== "cancelled" ? `
               <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#0f766e;">
                 <strong>IMPORTANTE:</strong> ${
-                  payload.type === "rescheduled" || isAdminBooking
+                  payload.type === "reserved"
+                    ? "Para confirmar tu cita, debes enviar el pago antes de las 14:00 hrs del día hábil anterior. De lo contrario la hora será liberada.<br /><br />Nuestra secretaria se contactará contigo con las instrucciones de pago y conexión. Su número es el +56968051535."
+                    : payload.type === "rescheduled" || isAdminBooking
                     ? "Recordamos que para confirmar esta cita debe enviar el pago antes de las 14:00 hras del día hábil anterior. De lo contrario esta cita será cancelada.<br /><br />Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion. Su numero es el +56968051535."
                     : "Nuestra secretaria se contactara contigo antes de la sesion para instrucciones de conexion. Su numero es el <a href=\"https://wa.me/56968051535\" style=\"color:#0f766e;text-decoration:underline;\">+56968051535</a>."
                 }
