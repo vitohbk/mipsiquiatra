@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { callEdgeFunction } from "@/lib/api/edge";
 import { useActiveTenant } from "@/lib/tenant/useActiveTenant";
+import { chunk } from "@/lib/supabase/batch";
 
 type Booking = {
   id: string;
@@ -224,21 +225,27 @@ export default function BookingsPage() {
       }
 
 
-      const paymentIds = bookingData
-        .map((booking) => booking.payment_id)
-        .filter((id): id is string => Boolean(id));
+      const paymentIds = Array.from(
+        new Set(
+          bookingData
+            .map((booking) => booking.payment_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      );
       let paymentStatusMap = new Map<string, string | null>();
       if (paymentIds.length > 0) {
-        const { data: paymentData, error: paymentError } = await supabase
-          .from("payments")
-          .select("id, status")
-          .in("id", paymentIds);
+        const batches = await Promise.all(
+          chunk(paymentIds).map((batch) =>
+            supabase.from("payments").select("id, status").in("id", batch),
+          ),
+        );
+        const paymentError = batches.find((batch) => batch.error)?.error;
         if (paymentError) {
           setError(paymentError.message);
           return;
         }
         paymentStatusMap = new Map(
-          (paymentData ?? []).map((payment) => [payment.id, payment.status ?? null]),
+          batches.flatMap((batch) => batch.data ?? []).map((payment) => [payment.id, payment.status ?? null]),
         );
       }
 
