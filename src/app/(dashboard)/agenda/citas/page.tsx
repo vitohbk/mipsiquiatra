@@ -124,8 +124,15 @@ export default function BookingsPage() {
   useEffect(() => {
     const load = async () => {
       if (!activeTenantId) return;
+      const bookingColumns =
+        "id, created_at, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency)";
+      // Fetch future and past bookings separately: a single ascending query over a
+      // clinic's whole history can hit Supabase's default row cap before it reaches
+      // upcoming appointments (e.g. next month) once past bookings accumulate.
+      const bookingCutoffIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const [
-        bookingsResult,
+        futureBookingsResult,
+        pastBookingsResult,
         servicesResult,
         patientsResult,
         membersResult,
@@ -134,12 +141,18 @@ export default function BookingsPage() {
       ] = await Promise.all([
         supabase
           .from("bookings")
-          .select(
-            "id, created_at, customer_name, customer_email, start_at, end_at, status, professional_user_id, service_id, patient_id, payment_id, services(name, modality, price_clp, payment_mode, deposit_amount_clp, currency)",
-          )
+          .select(bookingColumns)
           .eq("tenant_id", activeTenantId)
           .neq("status", "cancelled")
+          .gte("start_at", bookingCutoffIso)
           .order("start_at", { ascending: true }),
+        supabase
+          .from("bookings")
+          .select(bookingColumns)
+          .eq("tenant_id", activeTenantId)
+          .neq("status", "cancelled")
+          .lt("start_at", bookingCutoffIso)
+          .order("start_at", { ascending: false }),
         supabase
           .from("services")
           .select("id, name, duration_minutes, slug, price_clp, payment_mode, deposit_amount_clp, currency, requires_payment")
@@ -160,13 +173,20 @@ export default function BookingsPage() {
         supabase.auth.getUser(),
       ]);
 
-      if (bookingsResult.error) {
-        setError(bookingsResult.error.message);
+      if (futureBookingsResult.error) {
+        setError(futureBookingsResult.error.message);
+        return;
+      }
+      if (pastBookingsResult.error) {
+        setError(pastBookingsResult.error.message);
         return;
       }
 
       setPaymentStatusMap({});
-      const bookingData = (bookingsResult.data ?? []) as Booking[];
+      const bookingData = [
+        ...((futureBookingsResult.data ?? []) as Booking[]),
+        ...((pastBookingsResult.data ?? []) as Booking[]),
+      ];
       const serviceData = servicesResult.data;
       const patientData = patientsResult.data;
       const memberData = membersResult.data;
